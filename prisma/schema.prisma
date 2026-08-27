@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Institution {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  publicKey    String        @db.Text
+  algorithm    String        // 'rsa' | 'ecc' | 'ed25519'
+  contactName  String?
+  website      String?
+  logoUrl      String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  certificates Certificate[]
+}
+
+model Certificate {
+  id            String         @id @default(uuid())
+  institutionId String
+  institution   Institution    @relation(fields: [institutionId], references: [id])
+  studentName   String
+  rollNo        String
+  degree        String
+  cgpa          Float
+  issueDate     DateTime
+  dataHash      String         @unique
+  signature     String         @db.Text
+  qrPayload     String?        @db.Text
+  status        String         @default("active") // 'active' | 'revoked'
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  verifications Verification[]
+
+  @@index([institutionId])
+  @@index([dataHash])
+  @@index([rollNo])
+}
+
+model Verification {
+  id            String       @id @default(uuid())
+  certificateId String?
+  certificate   Certificate? @relation(fields: [certificateId], references: [id])
+  result        String       // 'authentic' | 'tampered' | 'not_found' | 'revoked'
+  method        String       // 'qr_scan' | 'pdf_upload' | 'manual_id'
+  verifiedAt    DateTime     @default(now())
+  ipAddress     String?
+  userAgent     String?
+
+  @@index([certificateId])
+  @@index([verifiedAt])
+}
