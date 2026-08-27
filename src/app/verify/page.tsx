@@ -83,8 +83,8 @@ export default function VerifyPage() {
   const [loading, setLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [copiedHash, setCopiedHash] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const qrImageInputRef = useRef<HTMLInputElement>(null);
 
   const handleScan = useCallback(async (data: string) => {
     setLoading(true);
@@ -106,6 +106,19 @@ export default function VerifyPage() {
   }, []);
 
   const scanner = useQRScanner({ onScan: handleScan });
+
+  const handleQRImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+    const found = await scanner.scanImageFile(file);
+    if (!found) {
+      alert('No valid QR code was detected in the uploaded image. Please ensure the QR code is clearly visible and well-lit.');
+      setLoading(false);
+    }
+    // reset input
+    e.target.value = '';
+  };
 
   const handleIdVerify = async (idToVerify?: string) => {
     const targetId = (idToVerify || certId).trim();
@@ -240,58 +253,105 @@ export default function VerifyPage() {
           {/* QR Scanner Mode */}
           {mode === 'qr' && (
             <div className="flex flex-col items-center space-y-4">
-              {!scanner.isActive ? (
-                <div className="w-full max-w-sm aspect-square bg-[#FAF6EF] rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-[#D5C5AC] p-6 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-[#FEF9E5] text-[#8A5D08] flex items-center justify-center mb-3">
-                    <Camera className="w-7 h-7" />
+              <div className="w-full max-w-sm aspect-square bg-[#141619] rounded-2xl overflow-hidden relative shadow-warm-lg border border-[#EAE0CE]">
+                {/* Persistent Video Element to guarantee immediate stream binding */}
+                <video
+                  ref={scanner.videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                    scanner.isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  }`}
+                />
+
+                {/* When Camera is NOT active: Show Launch Controls Overlay */}
+                {!scanner.isActive && (
+                  <div className="absolute inset-0 bg-[#FAF6EF] flex flex-col items-center justify-center p-6 text-center z-10">
+                    <div className="w-14 h-14 rounded-2xl bg-[#FEF9E5] text-[#8A5D08] flex items-center justify-center mb-3 shadow-xs">
+                      <Camera className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-sm font-bold text-[#141619] mb-1">Camera Scanner Ready</h3>
+                    <p className="text-xs text-[#716049] mb-5 max-w-xs leading-relaxed">
+                      Point your camera or laptop webcam at the QR code printed on the credential.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={scanner.start}
+                      disabled={scanner.isStarting}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-[#181A1D] text-white text-xs font-bold rounded-xl hover:bg-[#282B30] shadow-warm hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer disabled:opacity-60"
+                    >
+                      {scanner.isStarting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 text-[#FEF0C2] animate-spin" />
+                          <span>Starting Camera...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="w-4 h-4 text-[#FEF0C2]" />
+                          <span>Launch Camera Scanner</span>
+                        </>
+                      )}
+                    </button>
                   </div>
-                  <h3 className="text-sm font-bold text-[#141619] mb-1">Camera Scanner Ready</h3>
-                  <p className="text-xs text-[#716049] mb-5 max-w-xs leading-relaxed">
-                    Point your camera at the QR code printed on the physical or digital academic credential.
-                  </p>
-                  <button
-                    onClick={scanner.start}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#181A1D] text-white text-xs font-bold rounded-xl hover:bg-[#282B30] shadow-warm hover:-translate-y-0.5 transition-all"
-                  >
-                    <Camera className="w-4 h-4 text-[#FEF0C2]" />
-                    <span>Launch Camera Scanner</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="w-full max-w-sm space-y-3">
-                  <div className="w-full aspect-square bg-[#141619] rounded-2xl overflow-hidden relative shadow-warm-lg">
-                    <video
-                      ref={scanner.videoRef}
-                      autoPlay
-                      playsInline
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                    {/* Viewfinder Target Frame with Golden Corner Guides */}
+                )}
+
+                {/* When Camera is active: Golden Viewfinder Guides & Laser Scan Indicator */}
+                {scanner.isActive && (
+                  <>
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-8">
-                      <div className="w-full h-full border-2 border-[#FEF0C2]/80 rounded-xl relative">
+                      <div className="w-full h-full border-2 border-[#FEF0C2]/80 rounded-xl relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-5 h-5 border-t-4 border-l-4 border-[#FBC02D] -mt-1 -ml-1 rounded-tl" />
                         <div className="absolute top-0 right-0 w-5 h-5 border-t-4 border-r-4 border-[#FBC02D] -mt-1 -mr-1 rounded-tr" />
                         <div className="absolute bottom-0 left-0 w-5 h-5 border-b-4 border-l-4 border-[#FBC02D] -mb-1 -ml-1 rounded-bl" />
                         <div className="absolute bottom-0 right-0 w-5 h-5 border-b-4 border-r-4 border-[#FBC02D] -mb-1 -mr-1 rounded-br" />
+
+                        {/* Animated Laser Pulse */}
+                        <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-[#FBC02D] to-transparent shadow-[0_0_8px_#FBC02D] animate-pulse absolute top-1/2 -translate-y-1/2" />
                       </div>
                     </div>
+
                     <button
+                      type="button"
                       onClick={scanner.stop}
-                      className="absolute top-3 right-3 p-2 bg-black/70 backdrop-blur-sm rounded-xl text-white hover:bg-black transition-colors"
-                      title="Close Scanner"
+                      className="absolute top-3 right-3 p-2 bg-black/70 backdrop-blur-sm rounded-xl text-white hover:bg-black transition-colors z-20 cursor-pointer"
+                      title="Stop Camera"
                     >
                       <X className="w-4 h-4" />
                     </button>
-                  </div>
-                  <p className="text-center text-xs text-[#716049]">
-                    Align the QR code within the golden viewfinder guides to verify instantly.
-                  </p>
-                </div>
-              )}
+                  </>
+                )}
+              </div>
+
+              {/* Quick Image File Upload Alternative for QR Codes */}
+              <div className="flex flex-col items-center gap-1.5 pt-1">
+                <input
+                  ref={qrImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleQRImageUpload}
+                />
+                <button
+                  type="button"
+                  onClick={() => qrImageInputRef.current?.click()}
+                  className="text-xs font-semibold text-[#8A5D08] hover:text-[#181A1D] hover:underline inline-flex items-center gap-1.5 cursor-pointer py-1"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Or scan QR code screenshot / image file</span>
+                </button>
+              </div>
 
               {scanner.error && (
-                <div className="w-full max-w-sm bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl p-3.5 text-center">
-                  {scanner.error}
+                <div className="w-full max-w-sm bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl p-3.5 text-center space-y-2">
+                  <p className="font-semibold">{scanner.error}</p>
+                  <button
+                    type="button"
+                    onClick={scanner.start}
+                    className="px-3 py-1.5 bg-[#181A1D] text-white text-xs font-bold rounded-lg hover:bg-black transition-all cursor-pointer"
+                  >
+                    Try Camera Again
+                  </button>
                 </div>
               )}
             </div>
