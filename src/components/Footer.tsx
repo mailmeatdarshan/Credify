@@ -53,7 +53,7 @@ export default function Footer() {
             <div className="flex items-center gap-2.5 pt-2 text-[#716049]">
               {/* GitHub Official SVG Icon */}
               <a
-                href="https://github.com"
+                href="https://github.com/mailmeatdarshan/Credify"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[#181A1D] hover:bg-[#181A1D] hover:text-white transition-all shadow-2xs group"
