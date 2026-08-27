@@ -83,6 +83,7 @@ export default function VerifyPage() {
   const [loading, setLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [copiedHash, setCopiedHash] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const qrImageInputRef = useRef<HTMLInputElement>(null);
 
