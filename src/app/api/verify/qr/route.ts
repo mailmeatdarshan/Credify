@@ -33,10 +33,83 @@ export const POST = apiHandler(async (request: NextRequest) => {
   });
 
   if (!certificate) {
-    await prisma.verification.create({
-      data: { result: 'not_found', method: 'qr_scan' },
-    });
+    prisma.verification
+      .create({
+        data: {
+          result: 'not_found',
+          method: 'qr_scan',
+          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
+          userAgent: request.headers.get('user-agent') || null,
+        },
+      })
+      .catch(() => {});
     return NextResponse.json({ result: 'not_found' });
+  }
+
+  // Cross-check QR-embedded values against DB record
+  if (parsedPayload.hash && parsedPayload.hash !== certificate.dataHash) {
+    await prisma.verification.create({
+      data: {
+        certificateId: certificate.id,
+        result: 'tampered',
+        method: 'qr_scan',
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
+        userAgent: request.headers.get('user-agent') || null,
+      },
+    });
+    return NextResponse.json({
+      result: 'tampered',
+      message: 'QR code hash does not match the certificate record.',
+      certificate: {
+        id: certificate.id,
+        studentName: certificate.studentName,
+        rollNo: certificate.rollNo,
+        degree: certificate.degree,
+        cgpa: certificate.cgpa,
+        issueDate: certificate.issueDate,
+        status: certificate.status,
+      },
+      institution: {
+        id: certificate.institution.id,
+        name: certificate.institution.name,
+      },
+      verifiedAt: new Date(),
+      algorithm: certificate.institution.algorithm,
+      dataHash: certificate.dataHash,
+    });
+  }
+
+  // Verify QR signature prefix matches DB signature
+  if (parsedPayload.sig && !certificate.signature.startsWith(parsedPayload.sig)) {
+    await prisma.verification.create({
+      data: {
+        certificateId: certificate.id,
+        result: 'tampered',
+        method: 'qr_scan',
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
+        userAgent: request.headers.get('user-agent') || null,
+      },
+    });
+    return NextResponse.json({
+      result: 'tampered',
+      message: 'QR code signature does not match the certificate record.',
+      certificate: {
+        id: certificate.id,
+        studentName: certificate.studentName,
+        rollNo: certificate.rollNo,
+        degree: certificate.degree,
+        cgpa: certificate.cgpa,
+        issueDate: certificate.issueDate,
+        status: certificate.status,
+      },
+      institution: {
+        id: certificate.institution.id,
+        name: certificate.institution.name,
+      },
+      verifiedAt: new Date(),
+      algorithm: certificate.institution.algorithm,
+      dataHash: certificate.dataHash,
+    });
   }
 
   const certData: CertificateData = {

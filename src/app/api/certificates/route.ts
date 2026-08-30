@@ -24,6 +24,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
     prisma.certificate.count({ where }),
   ]);
 
+  const [activeCount, revokedCount] = await Promise.all([
+    prisma.certificate.count({ where: { ...where, status: 'active' } }),
+    prisma.certificate.count({ where: { ...where, status: 'revoked' } }),
+  ]);
+
   return NextResponse.json({
     certificates,
     pagination: {
@@ -32,5 +37,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       total,
       totalPages: Math.ceil(total / limit),
     },
+    activeCount,
+    revokedCount,
   });
 });

@@ -29,6 +29,8 @@ export function useQRScanner({
   const animFrameRef = useRef<number | null>(null);
   const lastScanTimeRef = useRef<number>(0);
   const isScanningRef = useRef<boolean>(false);
+  const lastScannedCodeRef = useRef<string | null>(null);
+  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [isActive, setIsActive] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
@@ -66,8 +68,18 @@ export function useQRScanner({
           });
 
           if (code && code.data && code.data.trim()) {
-            setLastScanResult(code.data);
-            onScan?.(code.data);
+            if (code.data !== lastScannedCodeRef.current) {
+              lastScannedCodeRef.current = code.data;
+              setLastScanResult(code.data);
+              onScan?.(code.data);
+
+              if (cooldownTimerRef.current) {
+                clearTimeout(cooldownTimerRef.current);
+              }
+              cooldownTimerRef.current = setTimeout(() => {
+                lastScannedCodeRef.current = null;
+              }, 3000);
+            }
           }
         } catch {
           // jsQR ignore invalid frames
@@ -142,6 +154,11 @@ export function useQRScanner({
     if (animFrameRef.current) {
       cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
+    }
+
+    if (cooldownTimerRef.current) {
+      clearTimeout(cooldownTimerRef.current);
+      cooldownTimerRef.current = null;
     }
 
     if (streamRef.current) {

@@ -8,11 +8,33 @@ import {
   analyzePDFForensics,
 } from '@/lib/pdf';
 import { apiHandler } from '@/lib/api-handler';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
+
+function normalizeField(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const formData = await request.formData();
+  
+  const ip = getClientIp(request);
+  const rateLimitResult = await rateLimit(ip, 'verify_upload');
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   let certificateId = (formData.get('certificate_id') as string) || '';
   const file = formData.get('file') as File | null;
+
+  if (!file || typeof file.arrayBuffer !== 'function') {
+    return NextResponse.json({ error: 'Valid file is required' }, { status: 400 });
+  }
+  if (file.type !== 'application/pdf') {
+    return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    return NextResponse.json({ error: 'File size must not exceed 10MB' }, { status: 400 });
+  }
 
   let buffer: Buffer | null = null;
   let extractedPdfText = '';
@@ -46,9 +68,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     let isPdfTextTampered = false;
     if (extractedFields) {
       if (
-        (extractedFields.studentName && !certificate.studentName.toLowerCase().includes(extractedFields.studentName.toLowerCase())) ||
-        (extractedFields.rollNo && !certificate.rollNo.toLowerCase().includes(extractedFields.rollNo.toLowerCase())) ||
-        (extractedFields.cgpa && Math.abs(parseFloat(extractedFields.cgpa) - certificate.cgpa) > 0.001)
+        (extractedFields.studentName && normalizeField(extractedFields.studentName) !== normalizeField(certificate.studentName)) ||
+        (extractedFields.rollNo && normalizeField(extractedFields.rollNo) !== normalizeField(certificate.rollNo)) ||
+        (extractedFields.cgpa && Math.abs(parseFloat(extractedFields.cgpa) - certificate.cgpa) > 0.001) ||
+        (extractedFields.degree && normalizeField(extractedFields.degree) !== normalizeField(certificate.degree))
       ) {
         isPdfTextTampered = true;
       }

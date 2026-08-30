@@ -10,10 +10,10 @@ export const GET = apiHandler(async (_request: NextRequest) => {
     select: {
       id: true,
       name: true,
-      email: true,
       algorithm: true,
       website: true,
       contactName: true,
+      ownerId: true,
       createdAt: true,
       _count: {
         select: { certificates: true },
@@ -25,10 +25,10 @@ export const GET = apiHandler(async (_request: NextRequest) => {
     institutions: institutions.map((inst) => ({
       id: inst.id,
       name: inst.name,
-      email: inst.email,
       algorithm: inst.algorithm,
       website: inst.website,
       contactName: inst.contactName,
+      ownerId: inst.ownerId,
       certificateCount: inst._count.certificates,
       createdAt: inst.createdAt,
     })),

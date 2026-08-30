@@ -41,7 +41,7 @@ export const verifyUploadSchema = z.object({
 });
 
 export const benchmarkSchema = z.object({
-  sampleSize: z.coerce.number().int().min(10).max(10000).default(1000),
+  sampleSize: z.coerce.number().int().min(10).max(500).default(100),
 });
 
 export const updateCertificateSchema = z.object({

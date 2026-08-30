@@ -50,10 +50,10 @@ interface BenchmarkResponse {
   };
 }
 
-const PRESET_SIZES = [100, 500, 1000, 2500];
+const PRESET_SIZES = [100, 250, 500];
 
 export default function BenchmarkDashboard() {
-  const [sampleSize, setSampleSize] = useState(1000);
+  const [sampleSize, setSampleSize] = useState(500);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<BenchmarkResponse | null>(null);
   const [error, setError] = useState('');

@@ -29,6 +29,7 @@ interface InstitutionSummary {
   name: string;
   email: string;
   algorithm: string;
+  ownerId?: string | null;
   certificateCount: number;
 }
 
@@ -66,6 +67,8 @@ export default function UniversityDashboard() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'revoked'>('all');
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [serverActiveCount, setServerActiveCount] = useState(0);
+  const [serverRevokedCount, setServerRevokedCount] = useState(0);
 
   // Fetch all registered institutions
   const fetchInstitutions = useCallback(async () => {
@@ -110,6 +113,8 @@ export default function UniversityDashboard() {
       if (!res.ok) throw new Error(json.error || 'Failed to load institution certificates');
       setCertificates(json.certificates);
       setPagination(json.pagination);
+      if (json.activeCount !== undefined) setServerActiveCount(json.activeCount);
+      if (json.revokedCount !== undefined) setServerRevokedCount(json.revokedCount);
       setPage(p);
       localStorage.setItem('credify_active_institution_id', instId);
     } catch (err) {
@@ -173,9 +178,10 @@ export default function UniversityDashboard() {
   }, [certificates, searchQuery, statusFilter]);
 
   const currentInstitution = institutionsList.find((i) => i.id === selectedInstitutionId);
-  const activeCount = certificates?.filter((c) => c.status === 'active').length ?? 0;
-  const revokedCount = certificates?.filter((c) => c.status === 'revoked').length ?? 0;
+  const activeCount = serverActiveCount;
+  const revokedCount = serverRevokedCount;
   const algorithm = currentInstitution?.algorithm?.toUpperCase() ?? 'ED25519';
+  const isOwner = !!currentInstitution?.ownerId && currentInstitution.ownerId === user?.id;
 
   return (
     <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 space-y-8">
@@ -196,6 +202,11 @@ export default function UniversityDashboard() {
           </div>
           <h1 className="font-serif text-3xl sm:text-4xl font-extrabold text-[#141619] tracking-tight">
             {currentInstitution ? currentInstitution.name : 'Authority Console'}
+            {currentInstitution && !isOwner && (
+              <span className="ml-3 align-middle inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#F1F2F3] text-[#716049] border border-[#E4E1D8]">
+                View-only
+              </span>
+            )}
           </h1>
           <p className="text-sm text-[#716049] max-w-xl leading-relaxed">
             Inspect verified credentials, audit cryptographic signatures, and manage credential revocation status.
@@ -354,7 +365,7 @@ export default function UniversityDashboard() {
                     : 'text-[#716049] hover:text-[#141619]'
                 }`}
               >
-                All ({certificates.length})
+                All ({pagination?.total ?? certificates?.length ?? 0})
               </button>
               <button
                 onClick={() => setStatusFilter('active')}
@@ -463,7 +474,7 @@ export default function UniversityDashboard() {
                             >
                               <FileText className="w-3.5 h-3.5 text-[#716049]" />
                             </Link>
-                            {cert.status === 'active' && (
+                            {cert.status === 'active' && isOwner && (
                               <button
                                 onClick={() => handleRevoke(cert.id)}
                                 disabled={revokingId === cert.id}
@@ -483,6 +494,30 @@ export default function UniversityDashboard() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {/* Pagination Controls */}
+            {pagination && pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-[#EAE0CE]">
+                <span className="text-xs text-[#716049]">
+                  Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => loadCertificates(selectedInstitutionId, page - 1)}
+                    disabled={page <= 1}
+                    className="p-2 rounded-lg border border-[#EAE0CE] text-[#716049] hover:bg-[#FAF6EF] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => loadCertificates(selectedInstitutionId, page + 1)}
+                    disabled={page >= (pagination?.totalPages ?? 1)}
+                    className="p-2 rounded-lg border border-[#EAE0CE] text-[#716049] hover:bg-[#FAF6EF] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -11,7 +11,7 @@ function getLimiter(key: string, points: number, duration: number) {
 
 export async function rateLimit(
   ip: string,
-  action: 'verify_qr' | 'verify_upload' | 'register' | 'issue',
+  action: 'verify_qr' | 'verify_upload' | 'register' | 'issue' | 'benchmark',
   customHeaders?: Headers
 ): Promise<{ success: boolean; retryAfter?: number }> {
   const config = {
@@ -19,6 +19,7 @@ export async function rateLimit(
     verify_upload: { points: 10, duration: 60 },
     register: { points: 5, duration: 300 },
     issue: { points: 20, duration: 60 },
+    benchmark: { points: 3, duration: 60 },
   }[action];
 
   const limiter = getLimiter(action, config.points, config.duration);
@@ -33,9 +34,17 @@ export async function rateLimit(
 }
 
 export function getClientIp(request: Request): string {
-  return (
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip') ||
-    '127.0.0.1'
-  );
+  // Prefer Vercel's trusted header (cannot be spoofed by client)
+  const vercelIp = request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim();
+  if (vercelIp) return vercelIp;
+  
+  // Fallback to x-real-ip (set by reverse proxies like nginx)
+  const realIp = request.headers.get('x-real-ip')?.trim();
+  if (realIp) return realIp;
+  
+  // Last resort: x-forwarded-for (can be spoofed without trusted proxy)
+  const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  if (forwardedFor) return forwardedFor;
+  
+  return '127.0.0.1';
 }

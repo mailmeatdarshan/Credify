@@ -1,14 +1,7 @@
 import { PrismaClient } from '@prisma/client';
-import { generateKeyPairSync, sign as cryptoSign, createHash } from 'crypto';
+import { signCertificate, CertificateData, AlgorithmType, generateKeyPair } from '../src/lib/crypto';
 
 const prisma = new PrismaClient();
-
-function canonicalize(data: Record<string, any>): string {
-  const keys = Object.keys(data).sort();
-  const sorted: Record<string, any> = {};
-  for (const k of keys) sorted[k] = data[k];
-  return JSON.stringify(sorted);
-}
 
 async function main() {
   console.log('🌱 Seeding database...');
@@ -19,10 +12,7 @@ async function main() {
   await prisma.institution.deleteMany({});
 
   // 1. Generate Ed25519 Root Key Pair for IIT Delhi
-  const { publicKey, privateKey } = generateKeyPairSync('ed25519', {
-    publicKeyEncoding: { type: 'spki', format: 'pem' },
-    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
-  });
+  const { publicKey, privateKey } = generateKeyPair('ed25519');
 
   const institution = await prisma.institution.create({
     data: {
@@ -37,7 +27,7 @@ async function main() {
 
   console.log(`✅ Created Institution: ${institution.name} (${institution.id})`);
 
-  // 2. Create sample signed certificates
+  // 2. Create sample signed certificates using the SAME pipeline as runtime issuance
   const students = [
     {
       studentName: 'Aarav Sharma',
@@ -70,7 +60,8 @@ async function main() {
   ];
 
   for (const s of students) {
-    const certPayload = {
+    // Use the exact same CertificateData shape and signing pipeline as runtime
+    const certData: CertificateData = {
       studentName: s.studentName,
       rollNo: s.rollNo,
       degree: s.degree,
@@ -79,9 +70,7 @@ async function main() {
       institutionId: institution.id,
     };
 
-    const canonicalData = canonicalize(certPayload);
-    const dataHash = createHash('sha256').update(canonicalData, 'utf8').digest('hex');
-    const signature = cryptoSign(null, Buffer.from(canonicalData, 'utf8'), privateKey).toString('base64');
+    const { signature, dataHash } = signCertificate(certData, privateKey, 'ed25519' as AlgorithmType);
 
     const cert = await prisma.certificate.create({
       data: {

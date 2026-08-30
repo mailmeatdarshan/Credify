@@ -56,6 +56,20 @@ export const POST = apiHandler(async (request: NextRequest) => {
     const qrPayload = createQRPayload(certificate.id, signature, dataHash, algorithm);
     const qrCode = await generateQRCode(qrPayload);
 
+    const pdfBuffer = await generateCertificatePDF({
+      institutionName: institution.name,
+      studentName: student.studentName,
+      rollNo: student.rollNo,
+      degree: student.degree,
+      cgpa: String(student.cgpa),
+      issueDate: normalizedDate,
+      certificateId: certificate.id,
+      qrCodeDataUrl: qrCode,
+      algorithm,
+      dataHash,
+      signature,
+    });
+
     issuedCertificates.push({
       id: certificate.id,
       studentName: student.studentName,
@@ -66,6 +80,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       dataHash,
       signature,
       qrCode,
+      pdfBase64: pdfBuffer.toString('base64'),
     });
   }
 

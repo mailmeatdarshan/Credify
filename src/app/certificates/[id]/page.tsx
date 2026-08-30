@@ -32,7 +32,7 @@ interface CertificateDetail {
   cgpa: number;
   issueDate: string;
   dataHash: string;
-  signature: string;
+  signature?: string;
   status: string;
   createdAt: string;
   institution: {
@@ -50,7 +50,6 @@ export default function CertificateDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [revoking, setRevoking] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -68,28 +67,6 @@ export default function CertificateDetailPage() {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
-  };
-
-  const handleRevoke = async () => {
-    if (!cert) return;
-    if (!confirm('Are you sure you want to revoke this certificate? This action will mark it as revoked on all public verifiers.')) {
-      return;
-    }
-    setRevoking(true);
-    try {
-      const res = await fetch(`/api/certificates/${cert.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'revoked' }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to revoke certificate');
-      setCert(json.certificate);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Revocation failed');
-    } finally {
-      setRevoking(false);
-    }
   };
 
   if (loading) {
@@ -314,7 +291,7 @@ export default function CertificateDetailPage() {
                     Asymmetric Digital Signature ({cert.institution.algorithm.toUpperCase()})
                   </span>
                   <button
-                    onClick={() => copyToClipboard(cert.signature, 'sig')}
+                    onClick={() => cert.signature && copyToClipboard(cert.signature, 'sig')}
                     className="text-[11px] text-[#8A5D08] hover:text-[#5C3D06] flex items-center gap-1 font-bold"
                   >
                     {copiedField === 'sig' ? <Check className="w-3 h-3 text-[#15803D]" /> : <Copy className="w-3 h-3" />}
@@ -338,17 +315,6 @@ export default function CertificateDetailPage() {
             >
               <Download className="w-4 h-4 text-[#FEF0C2]" /> Download Official PDF Transcript
             </a>
-
-            {!isRevoked && (
-              <button
-                onClick={handleRevoke}
-                disabled={revoking}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 text-xs font-bold py-3.5 px-5 rounded-xl transition-all"
-              >
-                {revoking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
-                <span>Revoke Certificate</span>
-              </button>
-            )}
           </div>
         </div>
       </div>

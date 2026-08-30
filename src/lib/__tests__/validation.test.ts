@@ -120,9 +120,9 @@ describe('Validation Schemas', () => {
   });
 
   describe('benchmarkSchema', () => {
-    it('defaults sampleSize to 1000', () => {
+    it('defaults sampleSize to 100', () => {
       const result = benchmarkSchema.parse({});
-      expect(result.sampleSize).toBe(1000);
+      expect(result.sampleSize).toBe(100);
     });
 
     it('accepts valid sample size', () => {
@@ -135,8 +135,8 @@ describe('Validation Schemas', () => {
       expect(result.success).toBe(false);
     });
 
-    it('rejects sample size > 10000', () => {
-      const result = benchmarkSchema.safeParse({ sampleSize: 20000 });
+    it('rejects sample size > 500', () => {
+      const result = benchmarkSchema.safeParse({ sampleSize: 1000 });
       expect(result.success).toBe(false);
     });
   });

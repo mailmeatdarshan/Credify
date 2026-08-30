@@ -256,7 +256,7 @@ export default function RegisterAuthority() {
                 </h3>
               </div>
               <p className="text-xs text-[#92400E] leading-relaxed">
-                Credify operates on zero-knowledge architecture. Your private key is generated client-side and is <strong>never stored in any centralized database</strong>. If you lose this key, you will not be able to sign certificates under this institution ID.
+                Your private key is generated during registration and delivered securely over HTTPS. It is <strong>never stored on our servers</strong>. If you lose this key, you will not be able to sign certificates under this institution ID.
               </p>
               <div className="flex gap-2">
                 <textarea
