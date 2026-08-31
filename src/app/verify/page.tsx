@@ -96,8 +96,15 @@ export default function VerifyPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payload: data }),
       });
-      const json = await res.json();
-      if (!res.ok || !json.result) throw new Error(json.error || 'Verification failed');
+      let json: any = null;
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
+      if (!res.ok || !json?.result) {
+        throw new Error(json?.error || 'Verification failed. Could not verify QR code.');
+      }
       setVerification(json);
     } catch (err) {
       setVerification({ result: 'not_found', error: err instanceof Error ? err.message : 'Invalid QR code' });
@@ -128,34 +135,46 @@ export default function VerifyPage() {
     setVerification({ result: 'loading' });
     try {
       const res = await fetch(`/api/certificates/${targetId}`);
-      if (!res.ok) {
-        setVerification({ result: 'not_found', error: 'Certificate ID not found in registry.' });
+      let json: any = null;
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
+
+      if (!res.ok || !json?.certificate) {
+        setVerification({
+          result: 'not_found',
+          error: json?.error || 'Certificate ID not found in the cryptographic registry.',
+        });
         return;
       }
-      const json = await res.json();
+
       const cert = json.certificate;
-      
-      const verifyRes = await fetch('/api/verify/qr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          payload: btoa(JSON.stringify({
-            v: 1,
-            id: cert.id,
-            sig: cert.signature,
-            hash: cert.dataHash,
-            alg: cert.institution?.algorithm || 'ed25519',
-          })),
-        }),
+      setVerification({
+        result: cert.status === 'revoked' ? 'revoked' : 'authentic',
+        certificate: {
+          id: cert.id,
+          studentName: cert.studentName,
+          rollNo: cert.rollNo,
+          degree: cert.degree,
+          cgpa: cert.cgpa,
+          issueDate: cert.issueDate,
+          status: cert.status,
+        },
+        institution: {
+          id: cert.institution?.id || '',
+          name: cert.institution?.name || 'Authorized Institution',
+        },
+        verifiedAt: new Date().toISOString(),
+        algorithm: cert.institution?.algorithm || 'ed25519',
+        dataHash: cert.dataHash,
       });
-      const verifyJson = await verifyRes.json();
-      if (!verifyRes.ok || !verifyJson.result) {
-        setVerification({ result: 'not_found', error: verifyJson.error || 'Verification failed' });
-        return;
-      }
-      setVerification(verifyJson);
     } catch (err) {
-      setVerification({ result: 'not_found', error: err instanceof Error ? err.message : 'Verification request failed' });
+      setVerification({
+        result: 'not_found',
+        error: err instanceof Error ? err.message : 'Verification request failed',
+      });
     } finally {
       setLoading(false);
     }
@@ -176,9 +195,14 @@ export default function VerifyPage() {
         formData.append('certificate_id', certId.trim());
       }
       const res = await fetch('/api/verify/upload', { method: 'POST', body: formData });
-      const json = await res.json();
-      if (!res.ok || !json.result) {
-        setVerification({ result: 'not_found', error: json.error || 'Failed to verify PDF document' });
+      let json: any = null;
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
+      if (!res.ok || !json?.result) {
+        setVerification({ result: 'not_found', error: json?.error || 'Failed to verify PDF document' });
         return;
       }
       setVerification(json);

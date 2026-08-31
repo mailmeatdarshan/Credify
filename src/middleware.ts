@@ -14,9 +14,11 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/api/verify(.*)',
   '/api/benchmark(.*)',
-  new RegExp(`^\\/api\\/certificates\\/${uuidPattern}$`),
-  new RegExp(`^\\/api\\/certificates\\/${uuidPattern}\\/pdf$`),
-  new RegExp(`^\\/certificates\\/${uuidPattern}$`),
+  '/api/certificates/:id',
+  '/api/certificates/:id/pdf',
+  '/certificates/(.*)',
+  '/api/institutions(.*)',
+  '/university/register(.*)',
 ]);
 
 export default clerkMiddleware((auth, req) => {

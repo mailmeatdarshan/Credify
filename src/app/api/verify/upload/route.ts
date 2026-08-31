@@ -29,8 +29,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (!file || typeof file.arrayBuffer !== 'function') {
     return NextResponse.json({ error: 'Valid file is required' }, { status: 400 });
   }
-  if (file.type !== 'application/pdf') {
-    return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  if (!isPdf) {
+    return NextResponse.json({ error: 'Please upload a valid PDF document.' }, { status: 400 });
   }
   if (file.size > 10 * 1024 * 1024) {
     return NextResponse.json({ error: 'File size must not exceed 10MB' }, { status: 400 });
