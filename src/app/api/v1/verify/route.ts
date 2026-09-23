@@ -39,11 +39,15 @@ function determineCertificateDetails(certificate: {
   rollNo: string;
   degree: string;
   cgpa: number;
-  issueDate: string;
+  issueDate: Date | string;
   status: string;
 }) {
   const degreeLower = (certificate.degree || '').toLowerCase();
   const rollLower = (certificate.rollNo || '').toLowerCase();
+  const issueDateStr = certificate.issueDate instanceof Date 
+    ? certificate.issueDate.toISOString() 
+    : String(certificate.issueDate || '');
+  const formattedDate = issueDateStr ? issueDateStr.split('T')[0] : 'Active Record';
 
   const isInternship =
     degreeLower.includes('intern') ||
@@ -70,9 +74,9 @@ function determineCertificateDetails(certificate: {
         degree: certificate.degree,
         role: certificate.degree,
         grade: `${certificate.cgpa.toFixed(2)} / 10.0`,
-        duration: `Issued: ${certificate.issueDate.split('T')[0]}`,
+        duration: `Issued: ${formattedDate}`,
         cgpa: certificate.cgpa,
-        issueDate: certificate.issueDate,
+        issueDate: issueDateStr,
         status: certificate.status,
       },
     };
@@ -98,7 +102,7 @@ function determineCertificateDetails(certificate: {
         position,
         prize: 'Merit Trophy & Distinction',
         cgpa: certificate.cgpa,
-        issueDate: certificate.issueDate,
+        issueDate: issueDateStr,
         status: certificate.status,
       },
     };
@@ -112,7 +116,7 @@ function determineCertificateDetails(certificate: {
       rollNo: certificate.rollNo,
       degree: certificate.degree,
       cgpa: certificate.cgpa,
-      issueDate: certificate.issueDate,
+      issueDate: issueDateStr,
       status: certificate.status,
     },
   };
