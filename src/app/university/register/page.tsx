@@ -106,6 +106,63 @@ export default function RegisterAuthority() {
 
   const currentOrgConfig = orgTypes.find(t => t.id === selectedOrgType) || orgTypes[0];
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/institutions/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: orgName, email: orgEmail, algorithm: selectedAlgo }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Registration failed');
+      setResult(json);
+      // Cache institution info in sessionStorage for seamless workflow
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('credify_last_institution_id', json.id);
+        sessionStorage.setItem('credify_last_private_key', json.privateKey);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to register');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const downloadKeyfile = () => {
+    if (!result) return;
+    const data = {
+      institutionId: result.id,
+      institutionName: result.name,
+      adminEmail: result.email,
+      algorithm: result.algorithm,
+      publicKey: result.publicKey,
+      privateKey: result.privateKey,
+      generatedAt: new Date().toISOString(),
+      notice: 'CONFIDENTIAL: Keep your private key secure. Credify operates on zero-knowledge and never stores private keys.',
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `credify_keys_${result.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleProceedToIssue = () => {
+    router.push('/university/issue');
+  };
+
   // If user is signed out, require login/signup before registration
   if (isLoaded && !isSignedIn) {
     return (
@@ -164,63 +221,6 @@ export default function RegisterAuthority() {
       </div>
     );
   }
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const res = await fetch('/api/institutions/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: orgName, email: orgEmail, algorithm: selectedAlgo }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Registration failed');
-      setResult(json);
-      // Cache institution info in sessionStorage for seamless workflow
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('credify_last_institution_id', json.id);
-        sessionStorage.setItem('credify_last_private_key', json.privateKey);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to register');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const copyToClipboard = (text: string, field: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
-  };
-
-  const downloadKeyfile = () => {
-    if (!result) return;
-    const data = {
-      institutionId: result.id,
-      institutionName: result.name,
-      adminEmail: result.email,
-      algorithm: result.algorithm,
-      publicKey: result.publicKey,
-      privateKey: result.privateKey,
-      generatedAt: new Date().toISOString(),
-      notice: 'CONFIDENTIAL: Keep your private key secure. Credify operates on zero-knowledge and never stores private keys.',
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `credify_keys_${result.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleProceedToIssue = () => {
-    router.push('/university/issue');
-  };
 
   return (
     <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8 space-y-8">

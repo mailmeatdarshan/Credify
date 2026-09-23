@@ -75,50 +75,6 @@ export default function UniversityDashboard() {
   const [serverActiveCount, setServerActiveCount] = useState(0);
   const [serverRevokedCount, setServerRevokedCount] = useState(0);
 
-  // If user is signed out, require login/signup before viewing dashboard
-  if (isLoaded && !isSignedIn) {
-    return (
-      <div className="max-w-xl mx-auto py-16 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-200">
-        <div className="bg-white border border-[#EAE0CE] rounded-3xl p-8 sm:p-10 shadow-warm-md text-center space-y-6">
-          <div className="w-16 h-16 rounded-3xl bg-[#FEF9E5] text-[#8A5D08] border border-[#FDE68A] flex items-center justify-center mx-auto shadow-sm">
-            <Building className="w-8 h-8" />
-          </div>
-
-          <div className="space-y-2">
-            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#141619]">
-              Authentication Required
-            </h1>
-            <p className="text-xs sm:text-sm text-[#716049] leading-relaxed max-w-md mx-auto">
-              To access your authority dashboard, audit logs, and certificate registry, please sign in with your administrator account.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <SignInButton mode="modal">
-              <button
-                type="button"
-                className="w-full sm:w-auto px-6 py-3 bg-[#181A1D] hover:bg-[#282B30] text-white text-xs font-bold rounded-xl shadow-warm-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <LogIn className="w-4 h-4 text-[#FDE98A]" />
-                <span>Sign In to Credify</span>
-              </button>
-            </SignInButton>
-
-            <SignUpButton mode="modal">
-              <button
-                type="button"
-                className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#FAF6EF] border border-[#EAE0CE] text-[#141619] text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <UserPlus className="w-4 h-4 text-[#8A5D08]" />
-                <span>Create New Account</span>
-              </button>
-            </SignUpButton>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Fetch all registered institutions
   const fetchInstitutions = useCallback(async () => {
     try {
@@ -231,6 +187,50 @@ export default function UniversityDashboard() {
   const revokedCount = serverRevokedCount;
   const algorithm = currentInstitution?.algorithm?.toUpperCase() ?? 'ED25519';
   const isOwner = !!currentInstitution?.ownerId && currentInstitution.ownerId === user?.id;
+
+  // If user is signed out, require login/signup before viewing dashboard
+  if (isLoaded && !isSignedIn) {
+    return (
+      <div className="max-w-xl mx-auto py-16 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-200">
+        <div className="bg-white border border-[#EAE0CE] rounded-3xl p-8 sm:p-10 shadow-warm-md text-center space-y-6">
+          <div className="w-16 h-16 rounded-3xl bg-[#FEF9E5] text-[#8A5D08] border border-[#FDE68A] flex items-center justify-center mx-auto shadow-sm">
+            <Building className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#141619]">
+              Authentication Required
+            </h1>
+            <p className="text-xs sm:text-sm text-[#716049] leading-relaxed max-w-md mx-auto">
+              To access your authority dashboard, audit logs, and certificate registry, please sign in with your administrator account.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <SignInButton mode="modal">
+              <button
+                type="button"
+                className="w-full sm:w-auto px-6 py-3 bg-[#181A1D] hover:bg-[#282B30] text-white text-xs font-bold rounded-xl shadow-warm-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LogIn className="w-4 h-4 text-[#FDE98A]" />
+                <span>Sign In to Credify</span>
+              </button>
+            </SignInButton>
+
+            <SignUpButton mode="modal">
+              <button
+                type="button"
+                className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#FAF6EF] border border-[#EAE0CE] text-[#141619] text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4 text-[#8A5D08]" />
+                <span>Create New Account</span>
+              </button>
+            </SignUpButton>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 space-y-8">
