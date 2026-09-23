@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth, SignInButton, SignUpButton } from '@clerk/nextjs';
 import {
   Loader2,
   Plus,
@@ -27,6 +28,8 @@ import {
   GraduationCap,
   Briefcase,
   Trophy,
+  LogIn,
+  UserPlus,
 } from 'lucide-react';
 
 interface InstitutionSummary {
@@ -62,6 +65,7 @@ Rohan Verma,TEAM-HACK-442,1st Place Winner - AI Track,10.00,2024-06-10`;
 
 function IssueCertificateContent() {
   const searchParams = useSearchParams();
+  const { isLoaded, isSignedIn } = useAuth();
   const [institutions, setInstitutions] = useState<InstitutionSummary[]>([]);
   const [institutionId, setInstitutionId] = useState('');
   const [privateKey, setPrivateKey] = useState('');
@@ -96,6 +100,50 @@ function IssueCertificateContent() {
   const [error, setError] = useState('');
   const [issued, setIssued] = useState<IssuedCert[] | null>(null);
   const [batchMetrics, setBatchMetrics] = useState<{ total: number; timeMs: number } | null>(null);
+
+  // If user is signed out, require login/signup before issuance
+  if (isLoaded && !isSignedIn) {
+    return (
+      <div className="max-w-xl mx-auto py-16 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-200">
+        <div className="bg-white border border-[#EAE0CE] rounded-3xl p-8 sm:p-10 shadow-warm-md text-center space-y-6">
+          <div className="w-16 h-16 rounded-3xl bg-[#FEF9E5] text-[#8A5D08] border border-[#FDE68A] flex items-center justify-center mx-auto shadow-sm">
+            <FileCheck className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#141619]">
+              Authentication Required
+            </h1>
+            <p className="text-xs sm:text-sm text-[#716049] leading-relaxed max-w-md mx-auto">
+              To batch-sign degrees, internship certificates, or competition awards, please sign in with your authority credentials.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <SignInButton mode="modal">
+              <button
+                type="button"
+                className="w-full sm:w-auto px-6 py-3 bg-[#181A1D] hover:bg-[#282B30] text-white text-xs font-bold rounded-xl shadow-warm-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LogIn className="w-4 h-4 text-[#FDE98A]" />
+                <span>Sign In to Credify</span>
+              </button>
+            </SignInButton>
+
+            <SignUpButton mode="modal">
+              <button
+                type="button"
+                className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#FAF6EF] border border-[#EAE0CE] text-[#141619] text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4 text-[#8A5D08]" />
+                <span>Create New Account</span>
+              </button>
+            </SignUpButton>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Fetch available institutions
   useEffect(() => {
@@ -780,23 +828,23 @@ function IssueCertificateContent() {
                     <button
                       type="button"
                       onClick={fillDegreeBatch}
-                      className="px-2 py-1 bg-white rounded-lg text-[#141619] hover:bg-[#FAF6EF] shadow-2xs transition-all"
+                      className="px-2.5 py-1 bg-white rounded-lg text-[#141619] hover:bg-[#FAF6EF] shadow-2xs transition-all"
                     >
-                      🎓 Degrees
+                      Degrees
                     </button>
                     <button
                       type="button"
                       onClick={fillInternshipBatch}
-                      className="px-2 py-1 bg-white rounded-lg text-[#141619] hover:bg-[#FAF6EF] shadow-2xs transition-all"
+                      className="px-2.5 py-1 bg-white rounded-lg text-[#141619] hover:bg-[#FAF6EF] shadow-2xs transition-all"
                     >
-                      💼 Internships
+                      Internships
                     </button>
                     <button
                       type="button"
                       onClick={fillHackathonBatch}
-                      className="px-2 py-1 bg-white rounded-lg text-[#141619] hover:bg-[#FAF6EF] shadow-2xs transition-all"
+                      className="px-2.5 py-1 bg-white rounded-lg text-[#141619] hover:bg-[#FAF6EF] shadow-2xs transition-all"
                     >
-                      🏆 Hackathons
+                      Hackathons
                     </button>
                   </div>
                   <button

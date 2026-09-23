@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Playfair_Display, Lora } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import AppLayoutShell from "@/components/AppLayoutShell";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({
@@ -49,11 +48,9 @@ export default function RootLayout({
     >
       <html lang="en" className={`${inter.variable} ${playfair.variable} ${lora.variable} ${jetbrains.variable}`}>
         <body className={`${inter.className} min-h-screen flex flex-col bg-white text-slate-900 antialiased`}>
-          <Navbar />
-          <main className="flex-1">
+          <AppLayoutShell>
             {children}
-          </main>
-          <Footer />
+          </AppLayoutShell>
         </body>
       </html>
     </ClerkProvider>

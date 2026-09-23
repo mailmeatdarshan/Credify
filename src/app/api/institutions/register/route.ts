@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { auth } from '@clerk/nextjs/server';
 import { generateKeyPair, AlgorithmType } from '@/lib/crypto';
+import { generateApiKey } from '@/lib/api-key';
 import { registerInstitutionSchema } from '@/lib/validation';
 import { apiHandler } from '@/lib/api-handler';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
@@ -34,9 +35,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const alg = algorithm as AlgorithmType;
   const { publicKey, privateKey } = generateKeyPair(alg);
+  const apiKey = generateApiKey();
 
   const institution = await prisma.institution.create({
-    data: { name, email, algorithm: alg, publicKey, ownerId: userId },
+    data: { name, email, algorithm: alg, publicKey, ownerId: userId, apiKey },
   });
 
   return NextResponse.json({
@@ -46,5 +48,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
     algorithm: institution.algorithm,
     publicKey: institution.publicKey,
     privateKey,
+    apiKey: institution.apiKey,
   });
 });

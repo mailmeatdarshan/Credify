@@ -20,6 +20,7 @@ async function main() {
       email: 'registrar@iitd.ac.in',
       publicKey,
       algorithm: 'ed25519',
+      apiKey: 'crdf_live_iitd_demo_key_994a2b1c8e7f',
       contactName: 'Office of Academic Affairs',
       website: 'https://home.iitd.ac.in',
     },
@@ -95,10 +96,88 @@ async function main() {
       },
     });
 
-    console.log(`📜 Issued Certificate: ${s.studentName} [${s.rollNo}] -> ID: ${cert.id}`);
+    console.log(`📜 Issued Certificate (IITD): ${s.studentName} [${s.rollNo}] -> ID: ${cert.id}`);
   }
 
-  console.log('\n🎉 Database successfully seeded with sample university & cryptographic certificates!');
+  // 3. Generate Bhavan's College Institution & Multi-Credential Sample Data
+  const { publicKey: bhavansPublic, privateKey: bhavansPrivate } = generateKeyPair('ed25519');
+
+  const bhavans = await prisma.institution.create({
+    data: {
+      name: "Bhavan's College (Empowered Autonomous)",
+      email: 'controller.exams@bhavans.ac.in',
+      publicKey: bhavansPublic,
+      algorithm: 'ed25519',
+      apiKey: 'crdf_live_a56a853dd93d34af2f01decd81e1568c1ff5f534528c081d',
+      contactName: 'Controller of Examinations',
+      website: 'https://bhavans.ac.in',
+    },
+  });
+
+  console.log(`✅ Created Institution: ${bhavans.name} (${bhavans.id})`);
+
+  const bhavansStudents = [
+    {
+      studentName: 'Aarav Sharma',
+      rollNo: '2021CS10234',
+      degree: 'B.Sc Computer Science',
+      cgpa: 9.45,
+      issueDate: new Date('2025-06-15'),
+    },
+    {
+      studentName: 'Priya Patel',
+      rollNo: 'INT-2025-089',
+      degree: 'Full Stack Engineering Intern',
+      cgpa: 9.80,
+      issueDate: new Date('2025-06-15'),
+    },
+    {
+      studentName: 'Rohan Verma',
+      rollNo: 'TEAM-HACK-442',
+      degree: '1st Place Winner - AI Track',
+      cgpa: 10.00,
+      issueDate: new Date('2025-06-10'),
+    },
+  ];
+
+  for (const s of bhavansStudents) {
+    const certData: CertificateData = {
+      studentName: s.studentName,
+      rollNo: s.rollNo,
+      degree: s.degree,
+      cgpa: s.cgpa,
+      issueDate: s.issueDate.toISOString().split('T')[0],
+      institutionId: bhavans.id,
+    };
+
+    const { signature, dataHash } = signCertificate(certData, bhavansPrivate, 'ed25519' as AlgorithmType);
+
+    const cert = await prisma.certificate.create({
+      data: {
+        studentName: s.studentName,
+        rollNo: s.rollNo,
+        degree: s.degree,
+        cgpa: s.cgpa,
+        issueDate: s.issueDate,
+        dataHash,
+        signature,
+        institutionId: bhavans.id,
+        status: 'active',
+      },
+    });
+
+    await prisma.verification.create({
+      data: {
+        certificateId: cert.id,
+        result: 'authentic',
+        method: 'api_pdf_upload',
+      },
+    });
+
+    console.log(`📜 Issued Certificate (Bhavan's): ${s.studentName} [${s.rollNo}] -> ID: ${cert.id}`);
+  }
+
+  console.log('\n🎉 Database successfully seeded with IIT Delhi & Bhavan\'s College multi-credential certificates!');
 }
 
 main()

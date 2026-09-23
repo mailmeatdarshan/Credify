@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { RefreshCw, ShieldCheck, AlertOctagon, Lock } from 'lucide-react';
+import { RefreshCw, ShieldCheck, AlertOctagon, Lock, GraduationCap } from 'lucide-react';
 import CredifyLogo from '@/components/CredifyLogo';
 
 export default function CredifyHeroCard() {
@@ -163,8 +163,8 @@ export default function CredifyHeroCard() {
       {/* Top Banner: Academic PKI Header */}
       <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#EAE0CE]/70">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-xl bg-[#FEF9E5] text-[#8A5D08] border border-[#FDE68A] flex items-center justify-center font-bold text-xs shadow-2xs">
-            🎓
+          <div className="w-7 h-7 rounded-xl bg-[#FEF9E5] text-[#8A5D08] border border-[#FDE68A] flex items-center justify-center shadow-2xs">
+            <GraduationCap className="w-4 h-4 text-[#8A5D08]" />
           </div>
           <div className="space-y-0.5">
             <div className="flex items-center gap-1.5">
@@ -246,8 +246,8 @@ export default function CredifyHeroCard() {
                 }`}
               >
                 {isTampered
-                  ? '🚨 Cryptographic Hash Mismatch!'
-                  : '✓ Zero-Trust Signature Verified'}
+                  ? 'Cryptographic Hash Mismatch'
+                  : 'Zero-Trust Signature Verified'}
               </span>
             </div>
 

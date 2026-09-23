@@ -62,16 +62,16 @@ export function extractCertificateFieldsFromText(text: string): {
   const nameMatch = text.match(/(?:This is to certify that|certify that)\s*\n?\s*([^\n]+)/i);
   if (nameMatch) fields.studentName = nameMatch[1].trim();
 
-  const rollMatch = text.match(/Roll\s*No[:\s]*([^\n]+)/i);
+  const rollMatch = text.match(/(?:Roll\s*No|Intern\s*\/\s*Employee\s*ID|Team\s*\/\s*Reg\s*ID|Employee\s*ID|Team\s*ID|Reg\s*ID|Enrollment\s*No|ID)[:\s]*([^\n]+)/i);
   if (rollMatch) fields.rollNo = rollMatch[1].trim();
 
-  const degreeMatch = text.match(/(?:degree of|completed the)\s*\n?\s*([^\n]+)/i);
+  const degreeMatch = text.match(/(?:degree requirements of|professional internship as|awarded the distinction of|degree of|completed the)\s*\n?\s*([^\n]+)/i);
   if (degreeMatch) fields.degree = degreeMatch[1].trim();
 
-  const cgpaMatch = text.match(/CGPA\s*(?:of)?\s*[:\s]*([0-9.]+)/i);
+  const cgpaMatch = text.match(/(?:CGPA|Performance\s*Score|Evaluation\s*Score|Score)\s*(?:of)?\s*[:\s]*([0-9.]+)/i);
   if (cgpaMatch) fields.cgpa = cgpaMatch[1].trim();
 
-  const dateMatch = text.match(/Date\s*of\s*Issue[:\s]*([^\n]+)/i);
+  const dateMatch = text.match(/(?:Date\s*of\s*Issue|Date|Issued\s*on)[:\s]*([^\n]+)/i);
   if (dateMatch) fields.issueDate = dateMatch[1].trim();
 
   return Object.keys(fields).length >= 3 ? fields : null;

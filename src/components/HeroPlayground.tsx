@@ -124,13 +124,14 @@ export default function HeroPlayground() {
             <button
               type="button"
               onClick={() => setIsTampered(!isTampered)}
-              className={`px-3 py-2.5 text-xs font-bold rounded-xl border transition-all whitespace-nowrap ${
+              className={`px-3 py-2.5 text-xs font-bold rounded-xl border transition-all whitespace-nowrap inline-flex items-center gap-1.5 ${
                 isTampered
                   ? 'bg-red-600 text-white border-red-600 shadow-xs'
                   : 'bg-[#FAF6EF] hover:bg-[#F4ECE0] text-[#716049] border-[#EAE0CE]'
               }`}
             >
-              {isTampered ? 'Revert Tamper' : '⚡ Simulate Tampering'}
+              <Zap className="w-3.5 h-3.5" />
+              <span>{isTampered ? 'Revert Tamper' : 'Simulate Tampering'}</span>
             </button>
           </div>
         </div>

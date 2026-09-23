@@ -13,6 +13,7 @@ model Institution {
   email        String        @unique
   publicKey    String        @db.Text
   algorithm    String        // 'rsa' | 'ecc' | 'ed25519'
+  apiKey       String?       @unique // Developer API key for external integration (crdf_live_...)
   ownerId      String?       // Clerk user id of the admin who registered this institution
   contactName  String?
   website      String?

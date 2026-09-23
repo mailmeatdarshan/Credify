@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { label: 'Dashboard', href: '/university/dashboard' },
   { label: 'Issue Credentials', href: '/university/issue' },
   { label: 'Register Org', href: '/university/register' },
+  { label: 'Developers & API', href: '/developers' },
   { label: 'Crypto Lab', href: '/benchmark' },
 ];
 

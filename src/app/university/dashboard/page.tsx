@@ -20,15 +20,19 @@ import {
   Filter,
   GraduationCap,
   Sparkles,
+  KeyRound,
+  LogIn,
+  UserPlus,
 } from 'lucide-react';
 import CredifyLogo from '@/components/CredifyLogo';
-import { useUser, UserButton } from '@clerk/nextjs';
+import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 
 interface InstitutionSummary {
   id: string;
   name: string;
   email: string;
   algorithm: string;
+  apiKey?: string | null;
   ownerId?: string | null;
   certificateCount: number;
 }
@@ -54,6 +58,7 @@ interface Pagination {
 
 export default function UniversityDashboard() {
   const { user } = useUser();
+  const { isLoaded, isSignedIn } = useAuth();
   const [institutionsList, setInstitutionsList] = useState<InstitutionSummary[]>([]);
   const [selectedInstitutionId, setSelectedInstitutionId] = useState<string>('');
   const [loadingInstitutions, setLoadingInstitutions] = useState(true);
@@ -69,6 +74,50 @@ export default function UniversityDashboard() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [serverActiveCount, setServerActiveCount] = useState(0);
   const [serverRevokedCount, setServerRevokedCount] = useState(0);
+
+  // If user is signed out, require login/signup before viewing dashboard
+  if (isLoaded && !isSignedIn) {
+    return (
+      <div className="max-w-xl mx-auto py-16 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-200">
+        <div className="bg-white border border-[#EAE0CE] rounded-3xl p-8 sm:p-10 shadow-warm-md text-center space-y-6">
+          <div className="w-16 h-16 rounded-3xl bg-[#FEF9E5] text-[#8A5D08] border border-[#FDE68A] flex items-center justify-center mx-auto shadow-sm">
+            <Building className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#141619]">
+              Authentication Required
+            </h1>
+            <p className="text-xs sm:text-sm text-[#716049] leading-relaxed max-w-md mx-auto">
+              To access your authority dashboard, audit logs, and certificate registry, please sign in with your administrator account.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <SignInButton mode="modal">
+              <button
+                type="button"
+                className="w-full sm:w-auto px-6 py-3 bg-[#181A1D] hover:bg-[#282B30] text-white text-xs font-bold rounded-xl shadow-warm-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LogIn className="w-4 h-4 text-[#FDE98A]" />
+                <span>Sign In to Credify</span>
+              </button>
+            </SignInButton>
+
+            <SignUpButton mode="modal">
+              <button
+                type="button"
+                className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-[#FAF6EF] border border-[#EAE0CE] text-[#141619] text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4 text-[#8A5D08]" />
+                <span>Create New Account</span>
+              </button>
+            </SignUpButton>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Fetch all registered institutions
   const fetchInstitutions = useCallback(async () => {
@@ -333,6 +382,94 @@ export default function UniversityDashboard() {
             <div>
               <p className="text-[11px] font-bold text-[#716049] uppercase tracking-wider">Cryptographic Scheme</p>
               <p className="text-xl font-bold font-mono text-[#141619] mt-1">{algorithm}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Developer API & Integration Card */}
+      {currentInstitution && (
+        <div className="bg-[#181A1D] border border-[#2E333D] rounded-3xl p-6 sm:p-7 shadow-warm-lg text-white space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2E333D] pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-[#FEF0C2] text-[#181A1D] flex items-center justify-center font-bold text-sm">
+                <KeyRound className="w-5 h-5 text-[#8A5D08]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Developer API &amp; College Website Integration</span>
+                  <span className="bg-[#282B30] text-[#FEF0C2] text-[10px] font-mono px-2 py-0.5 rounded-full border border-[#3A3F4A]">
+                    Live
+                  </span>
+                </h3>
+                <p className="text-xs text-[#A0A5B1] mt-0.5">
+                  Use your secret API key to verify marksheets on your college portal ({currentInstitution.name}).
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/developers"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#282B30] hover:bg-[#3A3F4A] border border-[#3A3F4A] text-[#FEF0C2] rounded-xl text-xs font-bold transition-all shadow-xs w-fit"
+            >
+              <span>View API Docs</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* API Key Box */}
+            <div className="bg-[#121417] border border-[#2E333D] rounded-2xl p-4 space-y-2">
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-[#A0A5B1] font-bold">
+                Institution Live API Key (x-api-key)
+              </label>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  readOnly
+                  value={currentInstitution.apiKey || 'crdf_live_key_loading...'}
+                  className="flex-1 bg-[#181A1D] border border-[#2E333D] rounded-xl px-3 py-2 text-xs font-mono text-[#FEF0C2] select-all outline-none"
+                />
+                <button
+                  onClick={() => {
+                    if (currentInstitution.apiKey) {
+                      navigator.clipboard.writeText(currentInstitution.apiKey);
+                      setCopiedId('api_key');
+                      setTimeout(() => setCopiedId(null), 2000);
+                    }
+                  }}
+                  className="px-3 py-2 bg-[#282B30] hover:bg-[#3A3F4A] text-white border border-[#4B505B] rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
+                >
+                  {copiedId === 'api_key' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-[#D5C5AC]" />}
+                  <span>{copiedId === 'api_key' ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Embed Snippet */}
+            <div className="bg-[#121417] border border-[#2E333D] rounded-2xl p-4 space-y-2">
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-[#A0A5B1] font-bold">
+                Drop-in College Portal Widget HTML
+              </label>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  readOnly
+                  value={`<div id="credify-verify-widget" data-api-key="${currentInstitution.apiKey || 'YOUR_KEY'}" data-college-name="${currentInstitution.name}"></div><script src="http://localhost:3000/embed.js"></script>`}
+                  className="flex-1 bg-[#181A1D] border border-[#2E333D] rounded-xl px-3 py-2 text-xs font-mono text-[#D5C5AC] select-all outline-none overflow-hidden text-ellipsis whitespace-nowrap"
+                />
+                <button
+                  onClick={() => {
+                    const snippet = `<div id="credify-verify-widget" data-api-key="${currentInstitution.apiKey || 'YOUR_KEY'}" data-college-name="${currentInstitution.name}"></div>\n<script src="http://localhost:3000/embed.js"></script>`;
+                    navigator.clipboard.writeText(snippet);
+                    setCopiedId('widget_code');
+                    setTimeout(() => setCopiedId(null), 2000);
+                  }}
+                  className="px-3 py-2 bg-[#282B30] hover:bg-[#3A3F4A] text-white border border-[#4B505B] rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
+                >
+                  {copiedId === 'widget_code' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-[#D5C5AC]" />}
+                  <span>{copiedId === 'widget_code' ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
