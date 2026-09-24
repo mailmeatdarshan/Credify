@@ -136,6 +136,7 @@ export default function RegisterAuthority() {
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('credify_last_institution_id', json.id);
         sessionStorage.setItem('credify_last_private_key', json.privateKey);
+        sessionStorage.setItem(`credify_key_${json.id}`, json.privateKey);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to register');
@@ -172,7 +173,11 @@ export default function RegisterAuthority() {
   };
 
   const handleProceedToIssue = () => {
-    router.push('/university/issue');
+    if (result) {
+      router.push(`/university/issue?institutionId=${result.id}`);
+    } else {
+      router.push('/university/issue');
+    }
   };
 
   // If user is signed out, require login/signup before registration

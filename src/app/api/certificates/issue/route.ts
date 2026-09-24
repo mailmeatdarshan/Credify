@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { signCertificate, CertificateData, AlgorithmType } from '@/lib/crypto';
+import { signCertificate, verifyCertificate, CertificateData, AlgorithmType } from '@/lib/crypto';
 import { generateQRCode, createQRPayload } from '@/lib/qr';
 import { generateCertificatePDF } from '@/lib/pdf';
 import { issueCertificateSchema } from '@/lib/validation';
@@ -21,6 +21,38 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const algorithm = institution.algorithm as AlgorithmType;
+
+  // Validate private key and algorithm compatibility before processing
+  try {
+    const testData: CertificateData = {
+      studentName: 'Test',
+      rollNo: 'Test',
+      degree: 'Test',
+      cgpa: 10,
+      issueDate: '2026-01-01',
+      institutionId,
+    };
+    const testSign = signCertificate(testData, privateKey, algorithm);
+
+    // Verify test signature against institution's public root key
+    const verification = verifyCertificate(testData, testSign.signature, institution.publicKey, algorithm);
+    if (!verification.isValid) {
+      return NextResponse.json(
+        {
+          error: `Cryptographic Key Mismatch: The provided private key does not match the public root key registered for "${institution.name}". Please ensure you are using the private key generated for this institution.`,
+        },
+        { status: 400 }
+      );
+    }
+  } catch (keyError: any) {
+    return NextResponse.json(
+      {
+        error: `Invalid Private Key Format: Could not sign using algorithm ${algorithm.toUpperCase()}. (${keyError?.message || 'Invalid PEM key format'})`,
+      },
+      { status: 400 }
+    );
+  }
+
   const issuedCertificates = [];
 
   for (const student of students) {

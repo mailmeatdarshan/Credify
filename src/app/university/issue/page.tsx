@@ -101,6 +101,25 @@ function IssueCertificateContent() {
   const [issued, setIssued] = useState<IssuedCert[] | null>(null);
   const [batchMetrics, setBatchMetrics] = useState<{ total: number; timeMs: number } | null>(null);
 
+  const handleInstitutionChange = (newId: string) => {
+    setInstitutionId(newId);
+    setError('');
+    const savedKey = typeof window !== 'undefined' ? sessionStorage.getItem(`credify_key_${newId}`) : null;
+    const lastId = typeof window !== 'undefined' ? sessionStorage.getItem('credify_last_institution_id') : null;
+    const lastKey = typeof window !== 'undefined' ? sessionStorage.getItem('credify_last_private_key') : null;
+
+    if (savedKey) {
+      setPrivateKey(savedKey);
+      setAutoLoaded(true);
+    } else if (lastId === newId && lastKey) {
+      setPrivateKey(lastKey);
+      setAutoLoaded(true);
+    } else {
+      setPrivateKey('');
+      setAutoLoaded(false);
+    }
+  };
+
   // Fetch available institutions
   useEffect(() => {
     async function loadInstitutions() {
@@ -112,13 +131,16 @@ function IssueCertificateContent() {
           
           const paramId = searchParams.get('institutionId');
           const cachedId = typeof window !== 'undefined' ? sessionStorage.getItem('credify_last_institution_id') : null;
-          const cachedKey = typeof window !== 'undefined' ? sessionStorage.getItem('credify_last_private_key') : null;
           
-          const targetId = paramId || cachedId || json.institutions[0].id;
+          const targetId = paramId || (cachedId && json.institutions.some((i: any) => i.id === cachedId) ? cachedId : json.institutions[0].id);
           setInstitutionId(targetId);
 
-          if (cachedKey && (!paramId || paramId === cachedId)) {
-            setPrivateKey(cachedKey);
+          const savedKeyForTarget = typeof window !== 'undefined' ? sessionStorage.getItem(`credify_key_${targetId}`) : null;
+          const lastKey = typeof window !== 'undefined' ? sessionStorage.getItem('credify_last_private_key') : null;
+          const keyToUse = savedKeyForTarget || (cachedId === targetId ? lastKey : null);
+
+          if (keyToUse) {
+            setPrivateKey(keyToUse);
             setAutoLoaded(true);
           }
         }
@@ -138,10 +160,21 @@ function IssueCertificateContent() {
       try {
         const content = event.target?.result as string;
         const parsed = JSON.parse(content);
-        if (parsed.id) setInstitutionId(parsed.id);
-        if (parsed.privateKey) {
-          setPrivateKey(parsed.privateKey);
+        const targetId = parsed.institutionId || parsed.id;
+        const targetKey = parsed.privateKey;
+        if (targetId) {
+          setInstitutionId(targetId);
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('credify_last_institution_id', targetId);
+          }
+        }
+        if (targetKey) {
+          setPrivateKey(targetKey);
           setAutoLoaded(true);
+          if (targetId && typeof window !== 'undefined') {
+            sessionStorage.setItem(`credify_key_${targetId}`, targetKey);
+            sessionStorage.setItem('credify_last_private_key', targetKey);
+          }
         }
       } catch {
         alert('Invalid keyfile format. Please upload a valid .json keyfile generated during registration.');
@@ -704,7 +737,7 @@ function IssueCertificateContent() {
                 {institutions.length > 0 ? (
                   <select
                     value={institutionId}
-                    onChange={(e) => setInstitutionId(e.target.value)}
+                    onChange={(e) => handleInstitutionChange(e.target.value)}
                     className="w-full px-4 py-3 bg-[#FAF6EF] border border-[#EAE0CE] rounded-xl text-xs sm:text-sm font-bold text-[#141619] focus:bg-white focus:ring-2 focus:ring-[#FBC02D] transition-all cursor-pointer appearance-none"
                   >
                     {institutions.map((inst) => (

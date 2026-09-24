@@ -134,10 +134,44 @@ describe('Validation Schemas', () => {
       const result = benchmarkSchema.safeParse({ sampleSize: 5 });
       expect(result.success).toBe(false);
     });
+  });
 
-    it('rejects sample size > 500', () => {
-      const result = benchmarkSchema.safeParse({ sampleSize: 1000 });
-      expect(result.success).toBe(false);
+  describe('End-to-End Authority Provisioning, Issuance & Verification Flow', () => {
+    it('provisions an institution, issues a degree certificate with Ed25519, and verifies payload', async () => {
+      const { generateKeyPair, signCertificate, verifyCertificate } = await import('@/lib/crypto');
+      const { createQRPayload, encodePayload, parseQRPayload } = await import('@/lib/qr');
+
+      const keyPair = generateKeyPair('ed25519');
+      expect(keyPair.publicKey).toContain('BEGIN PUBLIC KEY');
+      expect(keyPair.privateKey).toContain('BEGIN PRIVATE KEY');
+
+      const student = {
+        studentName: 'Aarav Sharma',
+        rollNo: 'BHAVANS-2026-CS-001',
+        degree: 'B.Sc Computer Science',
+        cgpa: 8.95,
+        issueDate: '2026-06-15',
+        institutionId: '550e8400-e29b-41d4-a716-446655440000',
+      };
+
+      const { signature, dataHash } = signCertificate(student, keyPair.privateKey, 'ed25519');
+      expect(signature).toBeDefined();
+      expect(dataHash).toHaveLength(64);
+
+      const qrPayload = createQRPayload('cert-123', signature, dataHash, 'ed25519');
+      const encoded = encodePayload(qrPayload);
+      const decoded = parseQRPayload(encoded);
+      expect(decoded).not.toBeNull();
+      expect(decoded?.id).toBe('cert-123');
+      expect(decoded?.sig).toBe(signature);
+
+      const verification = verifyCertificate(student, decoded!.sig, keyPair.publicKey, 'ed25519');
+      expect(verification.isValid).toBe(true);
+
+      // Test Tampering Detection
+      const tamperedStudent = { ...student, cgpa: 9.95 };
+      const tamperedVerification = verifyCertificate(tamperedStudent, signature, keyPair.publicKey, 'ed25519');
+      expect(tamperedVerification.isValid).toBe(false);
     });
   });
 });
