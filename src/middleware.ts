@@ -5,22 +5,20 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 // ':id' would also match /api/certificates/issue and /bulk. So scope with a UUID regex.
 const uuidPattern = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
-// Define public routes that any student, recruiter, or verifier can access without sign-in
+// Define public routes that can be accessed without middleware redirect.
+// Individual protected API routes (like /api/institutions/register and PATCH /api/certificates/[id])
+// handle authentication internally and return JSON 401 instead of HTML 307 redirects.
 const isPublicRoute = createRouteMatcher([
   '/',
   '/verify(.*)',
   '/benchmark(.*)',
   '/sign-in(.*)',
   '/sign-up(.*)',
-  '/api/verify(.*)',
-  '/api/benchmark(.*)',
-  '/api/certificates/:id',
-  '/api/certificates/:id/pdf',
-  '/certificates/(.*)',
-  '/api/institutions',
-  '/api/v1/(.*)',
+  '/certificates(.*)',
   '/developers(.*)',
   '/bhavans(.*)',
+  '/university(.*)',
+  '/api/(.*)',
 ]);
 
 export default clerkMiddleware((auth, req) => {

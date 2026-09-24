@@ -22,8 +22,9 @@ export function apiHandler(handler: ApiHandler): ApiHandler {
       }
 
       console.error('API Error:', error);
+      const message = error instanceof Error ? error.message : 'Internal server error';
       return NextResponse.json(
-        { error: 'Internal server error' },
+        { error: message },
         { status: 500 }
       );
     }

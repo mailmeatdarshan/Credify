@@ -379,6 +379,18 @@ function IssueCertificateContent() {
     setLoading(true);
     setError('');
 
+    if (!institutionId.trim()) {
+      setError('Please select an issuing institution or organization.');
+      setLoading(false);
+      return;
+    }
+
+    if (!privateKey.trim()) {
+      setError('Please provide your authority private key (paste it or upload your key bundle JSON).');
+      setLoading(false);
+      return;
+    }
+
     const targetStudents = issueMode === 'csv' ? csvStudents : students;
 
     // Validate non-empty
@@ -396,8 +408,22 @@ function IssueCertificateContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ institutionId, privateKey, students: targetStudents }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to issue credentials');
+
+      const responseText = await res.text();
+      let json: any;
+      try {
+        json = JSON.parse(responseText);
+      } catch {
+        throw new Error(
+          res.ok
+            ? 'Invalid response from server'
+            : `Server error (${res.status}): Please verify your authority private key and credentials.`
+        );
+      }
+
+      if (!res.ok) {
+        throw new Error(json.error || 'Failed to issue credentials');
+      }
       
       setIssued(json.certificates);
       if (json.timeTakenMs) {

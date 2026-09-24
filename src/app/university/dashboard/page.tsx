@@ -114,7 +114,18 @@ export default function UniversityDashboard() {
     setError('');
     try {
       const res = await fetch(`/api/certificates?institutionId=${instId}&page=${p}&limit=12`);
-      const json = await res.json();
+      const responseText = await res.text();
+      let json: any;
+      try {
+        json = JSON.parse(responseText);
+      } catch {
+        throw new Error(
+          res.ok
+            ? 'Invalid response from server'
+            : `Server error (${res.status}): Failed to fetch records.`
+        );
+      }
+
       if (!res.ok) throw new Error(json.error || 'Failed to load institution certificates');
       setCertificates(json.certificates);
       setPagination(json.pagination);
@@ -146,7 +157,18 @@ export default function UniversityDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'revoked' }),
       });
-      const json = await res.json();
+      const responseText = await res.text();
+      let json: any;
+      try {
+        json = JSON.parse(responseText);
+      } catch {
+        throw new Error(
+          res.ok
+            ? 'Invalid response from server'
+            : `Server error (${res.status}): Failed to revoke credential.`
+        );
+      }
+
       if (!res.ok) throw new Error(json.error || 'Failed to revoke certificate');
       
       if (certificates) {

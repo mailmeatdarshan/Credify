@@ -117,7 +117,19 @@ export default function RegisterAuthority() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: orgName, email: orgEmail, algorithm: selectedAlgo }),
       });
-      const json = await res.json();
+
+      const responseText = await res.text();
+      let json: any;
+      try {
+        json = JSON.parse(responseText);
+      } catch {
+        throw new Error(
+          res.ok
+            ? 'Invalid response from server'
+            : `Server error (${res.status}): Please make sure you are signed in.`
+        );
+      }
+
       if (!res.ok) throw new Error(json.error || 'Registration failed');
       setResult(json);
       // Cache institution info in sessionStorage for seamless workflow
