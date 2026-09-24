@@ -436,23 +436,35 @@ function IssueCertificateContent() {
 
     try {
       const endpoint = issueMode === 'csv' ? '/api/certificates/bulk' : '/api/certificates/issue';
+      console.log('[Credify] Issuing credentials via', endpoint, 'for institution:', institutionId);
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ institutionId, privateKey, students: targetStudents }),
       });
 
+      console.log('[Credify] Response status:', res.status, 'Content-Type:', res.headers.get('content-type'));
+
       const responseText = await res.text();
+      console.log('[Credify] Response length:', responseText.length, 'Preview:', responseText.substring(0, 200));
+
       let json: any = null;
       try {
         json = JSON.parse(responseText);
       } catch {
-        // Fallback for non-JSON server responses
-        json = { error: `Server returned HTTP ${res.status}: ${res.statusText || 'Request failed'}` };
+        // If response is HTML (e.g. Clerk redirect), show a clearer message
+        if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
+          json = { error: `Authentication error: The server returned an HTML page instead of JSON. Please ensure you are signed in and try again.` };
+        } else {
+          json = { error: `Server returned HTTP ${res.status}: ${responseText.substring(0, 200) || 'Empty response'}` };
+        }
       }
 
       if (!res.ok) {
-        throw new Error(json?.error || `Failed to issue credentials (HTTP ${res.status})`);
+        // Show the actual error message from the server
+        const errorMsg = json?.error || json?.message || `Failed to issue credentials (HTTP ${res.status})`;
+        const details = json?.details ? '\n' + json.details.map((d: any) => `${d.field}: ${d.message}`).join(', ') : '';
+        throw new Error(errorMsg + details);
       }
       
       setIssued(json.certificates);
@@ -460,6 +472,7 @@ function IssueCertificateContent() {
         setBatchMetrics({ total: json.totalIssued, timeMs: json.timeTakenMs });
       }
     } catch (err) {
+      console.error('[Credify] Issue error:', err);
       setError(err instanceof Error ? err.message : 'Failed to issue credentials');
     } finally {
       setLoading(false);

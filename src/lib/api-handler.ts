@@ -9,6 +9,7 @@ export function apiHandler(handler: ApiHandler): ApiHandler {
       return await handler(req, context);
     } catch (error) {
       if (error instanceof ZodError) {
+        console.error('[apiHandler] Zod validation error:', JSON.stringify(error.errors));
         return NextResponse.json(
           {
             error: 'Validation failed',
@@ -21,8 +22,12 @@ export function apiHandler(handler: ApiHandler): ApiHandler {
         );
       }
 
-      console.error('API Error:', error);
-      const message = error instanceof Error ? error.message : 'Internal server error';
+      // Log the full error details for debugging
+      const message = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+      console.error('[apiHandler] Unhandled API error:', message);
+      if (stack) console.error('[apiHandler] Stack:', stack);
+
       return NextResponse.json(
         { error: message },
         { status: 500 }
@@ -30,3 +35,4 @@ export function apiHandler(handler: ApiHandler): ApiHandler {
     }
   };
 }
+
