@@ -443,19 +443,16 @@ function IssueCertificateContent() {
       });
 
       const responseText = await res.text();
-      let json: any;
+      let json: any = null;
       try {
         json = JSON.parse(responseText);
       } catch {
-        throw new Error(
-          res.ok
-            ? 'Invalid response from server'
-            : `Server error (${res.status}): Please verify your authority private key and credentials.`
-        );
+        // Fallback for non-JSON server responses
+        json = { error: `Server returned HTTP ${res.status}: ${res.statusText || 'Request failed'}` };
       }
 
       if (!res.ok) {
-        throw new Error(json.error || 'Failed to issue credentials');
+        throw new Error(json?.error || `Failed to issue credentials (HTTP ${res.status})`);
       }
       
       setIssued(json.certificates);
