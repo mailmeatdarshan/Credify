@@ -14,11 +14,6 @@ const nextConfig = {
     if (isServer) {
       config.externals = [
         ...(Array.isArray(config.externals) ? config.externals : [config.externals].filter(Boolean)),
-        'pdfkit',
-        'pdf-parse',
-        'fontkit',
-        'restructure',
-        'iconv-lite',
         'canvas',
       ];
     }
