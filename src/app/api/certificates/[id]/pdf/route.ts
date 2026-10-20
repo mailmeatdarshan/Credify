@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { generateCertificatePDF } from '@/lib/pdf';
+import { generateCertificatePDF } from '@/lib/pdf/generate';
 import { generateQRCode, createQRPayload } from '@/lib/qr';
 
 export const dynamic = 'force-dynamic';

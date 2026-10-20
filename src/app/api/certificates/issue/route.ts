@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { signCertificate, verifyCertificate, CertificateData, AlgorithmType } from '@/lib/crypto';
 import { generateQRCode, createQRPayload } from '@/lib/qr';
-import { generateCertificatePDF } from '@/lib/pdf';
+import { generateCertificatePDF } from '@/lib/pdf/generate';
 import { issueCertificateSchema } from '@/lib/validation';
 import { apiHandler } from '@/lib/api-handler';
 

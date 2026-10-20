@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Playfair_Display, Lora } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import "@/lib/polyfills";
 import "./globals.css";
 import AppLayoutShell from "@/components/AppLayoutShell";
 

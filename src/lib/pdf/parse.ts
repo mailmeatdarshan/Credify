@@ -1,4 +1,4 @@
-import { PDFParse } from 'pdf-parse';
+import '@/lib/polyfills';
 import jsQR from 'jsqr';
 import { QRPayload } from '../qr/generate';
 
@@ -9,6 +9,7 @@ import { QRPayload } from '../qr/generate';
  */
 export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
+    const { PDFParse } = await import('pdf-parse');
     const parser = new PDFParse({ data: buffer });
     const textResult = await parser.getText();
     await parser.destroy();

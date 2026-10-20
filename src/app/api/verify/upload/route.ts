@@ -1,3 +1,4 @@
+import '@/lib/polyfills';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { verifyCertificate, CertificateData, AlgorithmType } from '@/lib/crypto';

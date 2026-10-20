@@ -1,3 +1,4 @@
+import '@/lib/polyfills';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { getInstitutionByApiKey } from '@/lib/api-key';
