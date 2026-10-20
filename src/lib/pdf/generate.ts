@@ -33,6 +33,7 @@ export async function generateCertificatePDF(data: CertificatePDFData): Promise<
       const stream = new PassThrough();
       const chunks: Buffer[] = [];
 
+      doc.on('error', (err) => reject(err));
       stream.on('data', (chunk) => chunks.push(chunk));
       stream.on('end', () => resolve(Buffer.concat(chunks)));
       stream.on('error', (err) => reject(err));

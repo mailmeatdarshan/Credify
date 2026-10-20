@@ -9,6 +9,11 @@ const nextConfig = {
       'iconv-lite',
       'png-js',
     ],
+    outputFileTracingIncludes: {
+      '/api/**/*': [
+        './node_modules/pdfkit/js/data/**',
+      ],
+    },
   },
   webpack: (config, { isServer }) => {
     if (isServer) {

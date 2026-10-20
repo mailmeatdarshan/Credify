@@ -452,11 +452,12 @@ function IssueCertificateContent() {
       try {
         json = JSON.parse(responseText);
       } catch {
-        // If response is HTML (e.g. Clerk redirect), show a clearer message
-        if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
-          json = { error: `Authentication error: The server returned an HTML page instead of JSON. Please ensure you are signed in and try again.` };
+        if (res.status === 401 || res.status === 403) {
+          json = { error: `Authentication required (HTTP ${res.status}): Please sign in to issue credentials.` };
+        } else if (res.status >= 500) {
+          json = { error: `Server Error (HTTP ${res.status}): The server encountered an error processing your request. Please check server logs.` };
         } else {
-          json = { error: `Server returned HTTP ${res.status}: ${responseText.substring(0, 200) || 'Empty response'}` };
+          json = { error: `Server returned HTTP ${res.status}: ${responseText.substring(0, 150) || 'Empty response'}` };
         }
       }
 

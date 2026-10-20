@@ -22,6 +22,12 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware((auth, req) => {
+  // Never intercept, block, or redirect API routes with HTML redirects.
+  // API routes handle their own authentication and return JSON responses.
+  if (req.nextUrl.pathname.startsWith('/api')) {
+    return;
+  }
+
   if (!isPublicRoute(req)) {
     auth().protect();
   }
