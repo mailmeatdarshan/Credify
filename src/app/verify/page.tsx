@@ -57,6 +57,7 @@ interface PDFForensicReport {
 
 interface VerificationResult {
   result: 'authentic' | 'tampered' | 'not_found' | 'revoked' | 'legacy_unverified' | 'high_risk_tampered' | 'loading';
+  message?: string;
   certificate?: {
     id: string;
     studentName: string;
