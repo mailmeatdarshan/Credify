@@ -5,6 +5,7 @@ import { verifyCertificate, CertificateData, AlgorithmType } from '@/lib/crypto'
 import {
   extractTextFromPDF,
   extractCertificateIdFromText,
+  extractCertificateIdFromPDFBuffer,
   extractCertificateFieldsFromText,
   analyzePDFForensics,
 } from '@/lib/pdf';
@@ -45,18 +46,30 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (file && typeof file.arrayBuffer === 'function') {
     try {
       buffer = Buffer.from(await file.arrayBuffer());
-      extractedPdfText = await extractTextFromPDF(buffer);
-      const parsedId = extractCertificateIdFromText(extractedPdfText);
-      if (parsedId) {
-        certificateId = parsedId;
+
+      // 1. First priority: Fast and resilient binary metadata extraction
+      const bufferId = extractCertificateIdFromPDFBuffer(buffer);
+      if (bufferId) {
+        certificateId = bufferId;
       }
-      extractedFields = extractCertificateFieldsFromText(extractedPdfText);
+
+      // 2. Second priority: Full text extraction for field-level forensic inspection
+      try {
+        extractedPdfText = await extractTextFromPDF(buffer);
+        const parsedId = extractCertificateIdFromText(extractedPdfText);
+        if (parsedId && !certificateId) {
+          certificateId = parsedId;
+        }
+        extractedFields = extractCertificateFieldsFromText(extractedPdfText);
+      } catch (err) {
+        console.error('Error parsing uploaded PDF text:', err);
+      }
     } catch (err) {
-      console.error('Error parsing uploaded PDF text:', err);
+      console.error('Error reading uploaded file buffer:', err);
     }
   }
 
-  // 1. If we have a Certificate ID, try looking it up in the Cryptographic Registry
+  // 1. If we have a Certificate ID, look it up in the Cryptographic Registry
   let certificate = null;
   if (certificateId && certificateId !== 'extract-from-pdf') {
     certificate = await prisma.certificate.findUnique({
@@ -68,14 +81,36 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // 2. Case A: Certificate Found in Cryptographic PKI Registry -> Verify Math Signature
   if (certificate) {
     let isPdfTextTampered = false;
+    const discrepancies: Record<string, { expected: string | number; detected: string | number }> = {};
+
     if (extractedFields) {
-      if (
-        (extractedFields.studentName && normalizeField(extractedFields.studentName) !== normalizeField(certificate.studentName)) ||
-        (extractedFields.rollNo && normalizeField(extractedFields.rollNo) !== normalizeField(certificate.rollNo)) ||
-        (extractedFields.cgpa && Math.abs(parseFloat(extractedFields.cgpa) - certificate.cgpa) > 0.001) ||
-        (extractedFields.degree && normalizeField(extractedFields.degree) !== normalizeField(certificate.degree))
-      ) {
+      if (extractedFields.studentName && normalizeField(extractedFields.studentName) !== normalizeField(certificate.studentName)) {
         isPdfTextTampered = true;
+        discrepancies['Student Name'] = {
+          expected: certificate.studentName,
+          detected: extractedFields.studentName,
+        };
+      }
+      if (extractedFields.rollNo && normalizeField(extractedFields.rollNo) !== normalizeField(certificate.rollNo)) {
+        isPdfTextTampered = true;
+        discrepancies['Roll / ID Number'] = {
+          expected: certificate.rollNo,
+          detected: extractedFields.rollNo,
+        };
+      }
+      if (extractedFields.cgpa && Math.abs(parseFloat(extractedFields.cgpa) - certificate.cgpa) > 0.001) {
+        isPdfTextTampered = true;
+        discrepancies['CGPA / Evaluation Score'] = {
+          expected: certificate.cgpa,
+          detected: parseFloat(extractedFields.cgpa),
+        };
+      }
+      if (extractedFields.degree && normalizeField(extractedFields.degree) !== normalizeField(certificate.degree)) {
+        isPdfTextTampered = true;
+        discrepancies['Degree / Distinction'] = {
+          expected: certificate.degree,
+          detected: extractedFields.degree,
+        };
       }
     }
 
@@ -132,6 +167,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
       verifiedAt: verification.verifiedAt,
       algorithm: certificate.institution.algorithm,
       dataHash: certificate.dataHash,
+      tampering: isPdfTextTampered || !verificationResult.isValid ? {
+        detected: true,
+        reason: isPdfTextTampered
+          ? 'Document field modification detected: Text extracted from uploaded PDF diverges from PKI registered state.'
+          : 'Asymmetric signature check failed: Data does not match the authority public root key.',
+        discrepancies: Object.keys(discrepancies).length > 0 ? discrepancies : undefined,
+      } : undefined,
     });
   }
 

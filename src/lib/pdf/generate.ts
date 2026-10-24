@@ -27,7 +27,14 @@ export async function generateCertificatePDF(data: CertificatePDFData): Promise<
       const doc = new PDFDocument({
         size: 'A4',
         layout: 'landscape',
-        margin: 50,
+        margin: 40,
+        info: {
+          Title: `Credential - ${data.studentName}`,
+          Author: data.institutionName,
+          Subject: `Credify Certificate ID: ${data.certificateId}`,
+          Keywords: `credify,${data.certificateId},${data.dataHash},${data.algorithm}`,
+          Producer: 'Credify Zero-Trust Cryptographic Engine',
+        },
       });
 
       const stream = new PassThrough();
@@ -142,23 +149,23 @@ export async function generateCertificatePDF(data: CertificatePDFData): Promise<
         });
       }
 
-      // Bottom Metadata and ID
-      const bottomY = doc.page.height - 75;
+      // Bottom Metadata and ID (strictly constrained to single page)
+      const bottomY = doc.page.height - 70;
       doc
         .fontSize(9.5)
         .font('Helvetica')
-        .text(`Certificate ID: ${data.certificateId}`, 50, bottomY, { align: 'center' });
+        .text(`Certificate ID: ${data.certificateId}`, 50, bottomY, { align: 'center', lineBreak: false });
 
       doc
-        .fontSize(9.5)
-        .text('Verified by Credify Zero-Trust PKI', 50, bottomY + 14, { align: 'center' });
+        .fontSize(9)
+        .text('Verified by Credify Zero-Trust PKI', 50, bottomY + 13, { align: 'center', lineBreak: false });
 
       // Digital Signature Metadata in small print
       const shortHash = data.dataHash.substring(0, 16);
       doc
         .fontSize(8)
         .fillColor('gray')
-        .text(`Alg: ${data.algorithm.toUpperCase()} | Hash: ${shortHash}...`, 50, bottomY + 28, { align: 'center' });
+        .text(`Alg: ${data.algorithm.toUpperCase()} | Hash: ${shortHash}...`, 50, bottomY + 25, { align: 'center', lineBreak: false });
 
       doc.end();
     } catch (error) {

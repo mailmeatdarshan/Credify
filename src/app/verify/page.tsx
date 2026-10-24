@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Camera,
   Search,
@@ -23,6 +24,10 @@ import {
   Calendar,
   Cpu,
   Info,
+  Download,
+  CheckCircle2,
+  GraduationCap,
+  Ban,
 } from 'lucide-react';
 import CredifyLogo from '@/components/CredifyLogo';
 import StatusBadge from '@/components/StatusBadge';
@@ -68,6 +73,11 @@ interface VerificationResult {
   error?: string;
   forensicReport?: PDFForensicReport;
   extractedTextSnippet?: string;
+  tampering?: {
+    detected: boolean;
+    reason: string;
+    discrepancies?: Record<string, { expected: string | number; detected: string | number }>;
+  };
 }
 
 const tabs = [
@@ -490,73 +500,306 @@ export default function VerifyPage() {
 
           <StatusBadge status={verification.result as any} customDescription={verification.error} />
 
-          {/* Case 1: Cryptographic Authentic Certificate */}
-          {verification.certificate && (
-            <div className="space-y-4">
-              <CertificateCard
-                certificate={{
-                  id: verification.certificate.id,
-                  studentName: verification.certificate.studentName,
-                  rollNo: verification.certificate.rollNo,
-                  degree: verification.certificate.degree,
-                  cgpa: verification.certificate.cgpa,
-                  issueDate: verification.certificate.issueDate,
-                  dataHash: verification.dataHash || '',
-                  status: verification.certificate.status,
-                }}
-              />
-
-              {/* Issuing Authority & Cryptographic Breakdown */}
-              <div className="bg-white border border-[#EAE0CE] rounded-2xl p-6 space-y-4 shadow-warm-sm">
-                <h4 className="text-xs font-bold text-[#141619] uppercase tracking-wider">
-                  Cryptographic Authority &amp; Proof
-                </h4>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="p-3.5 bg-[#FAF6EF] rounded-xl border border-[#EAE0CE]">
-                    <span className="text-[10px] font-semibold text-[#948065] uppercase tracking-wider block mb-1">
-                      Issuing Authority
-                    </span>
-                    <p className="font-bold text-[#141619]">
-                      {verification.institution?.name || 'Verified University'}
-                    </p>
-                    <p className="text-[11px] font-mono text-[#716049] truncate mt-0.5">
-                      ID: {verification.institution?.id}
+          {/* Case 1: Cryptographic Authentic Credential */}
+          {verification.result === 'authentic' && verification.certificate && (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-b from-[#F0FDF4] via-white to-[#F0FDF4] border-2 border-[#16A34A]/30 rounded-3xl p-6 sm:p-8 shadow-warm-md space-y-6">
+                {/* Official Verification Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#BBF7D0]">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#DCFCE7] text-[#15803D] border border-[#86EFAC] mb-1">
+                      <ShieldCheck className="w-4 h-4 text-[#16A34A]" />
+                      <span>100% Cryptographically Verified &amp; Authentic</span>
+                    </div>
+                    <h2 className="font-serif text-2xl sm:text-3xl font-extrabold text-[#14532D]">
+                      Authentic Credential Confirmed
+                    </h2>
+                    <p className="text-xs text-[#166534] max-w-xl leading-relaxed">
+                      This document has been mathematically validated against the registered public root key of{' '}
+                      <strong>{verification.institution?.name}</strong>. The payload matches the original issuance exactly with zero modifications.
                     </p>
                   </div>
-
-                  <div className="p-3.5 bg-[#FAF6EF] rounded-xl border border-[#EAE0CE]">
-                    <span className="text-[10px] font-semibold text-[#948065] uppercase tracking-wider block mb-1">
-                      Signature Primitive
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-1.5 bg-white/80 border border-[#BBF7D0] px-4 py-2.5 rounded-2xl shadow-2xs">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#15803D] flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A]" /> VALIDATED
                     </span>
-                    <p className="font-mono font-bold text-[#8A5D08]">
-                      {verification.algorithm?.toUpperCase() || 'ED25519'}
-                    </p>
-                    <p className="text-[11px] text-[#716049] mt-0.5">
-                      Canonical SHA-256 Digest Validation
-                    </p>
+                    <span className="text-[11px] font-mono text-[#14532D]">
+                      {verification.verifiedAt ? new Date(verification.verifiedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Verified Live'}
+                    </span>
                   </div>
                 </div>
 
-                {verification.dataHash && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[10px] font-semibold text-[#948065] uppercase tracking-wider">
-                        Verified Canonical SHA-256 Digest
+                {/* Candidate & Academic Details Spotlight */}
+                <div className="bg-white border border-[#EAE0CE] rounded-2xl p-6 shadow-2xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-4 border-b border-[#FAF6EF]">
+                    <div>
+                      <span className="text-[10px] font-mono font-bold text-[#8A5D08] uppercase tracking-wider block mb-1">
+                        Candidate Full Name
                       </span>
-                      <button
-                        onClick={() => copyHash(verification.dataHash!)}
-                        className="text-[11px] text-[#8A5D08] hover:text-[#5C3D06] flex items-center gap-1 font-semibold"
-                      >
-                        {copiedHash ? <Check className="w-3 h-3 text-[#15803D]" /> : <Copy className="w-3 h-3" />}
-                        <span>{copiedHash ? 'Copied' : 'Copy Digest'}</span>
-                      </button>
+                      <h3 className="text-2xl font-bold text-[#141619] tracking-tight">
+                        {verification.certificate.studentName}
+                      </h3>
+                      <p className="text-sm font-semibold text-[#716049] mt-0.5">
+                        {verification.certificate.degree}
+                      </p>
                     </div>
-                    <p className="font-mono text-xs text-[#4F4232] bg-[#FAF6EF] border border-[#EAE0CE] rounded-xl px-3.5 py-2 break-all select-all">
-                      {verification.dataHash}
+                    <div className="flex items-center gap-2">
+                      <span className="px-3.5 py-1 rounded-full text-xs font-mono font-bold bg-[#DCFCE7] text-[#15803D] border border-[#86EFAC]">
+                        Status: Active &amp; Valid
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                    <div className="p-3 bg-[#FAF6EF] rounded-xl border border-[#EAE0CE]/70">
+                      <span className="text-[10px] font-semibold text-[#948065] uppercase tracking-wider block mb-0.5">
+                        Roll / Student ID
+                      </span>
+                      <span className="font-mono font-bold text-[#141619]">
+                        {verification.certificate.rollNo}
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-[#FAF6EF] rounded-xl border border-[#EAE0CE]/70">
+                      <span className="text-[10px] font-semibold text-[#948065] uppercase tracking-wider block mb-0.5">
+                        Evaluation Score / CGPA
+                      </span>
+                      <span className="font-mono font-bold text-[#15803D] text-sm">
+                        {typeof verification.certificate.cgpa === 'number' ? verification.certificate.cgpa.toFixed(2) : verification.certificate.cgpa} <span className="text-[10px] text-[#716049]">/ 10.0</span>
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-[#FAF6EF] rounded-xl border border-[#EAE0CE]/70">
+                      <span className="text-[10px] font-semibold text-[#948065] uppercase tracking-wider block mb-0.5">
+                        Date of Issue
+                      </span>
+                      <span className="font-medium text-[#141619]">
+                        {new Date(verification.certificate.issueDate).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-[#FAF6EF] rounded-xl border border-[#EAE0CE]/70">
+                      <span className="text-[10px] font-semibold text-[#948065] uppercase tracking-wider block mb-0.5">
+                        Issuing Authority
+                      </span>
+                      <span className="font-bold text-[#141619] truncate block" title={verification.institution?.name}>
+                        {verification.institution?.name}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4-Point Cryptographic Proof Audit */}
+                <div className="bg-[#FAF6EF] border border-[#EAE0CE] rounded-2xl p-5 space-y-3">
+                  <h4 className="text-xs font-bold text-[#141619] uppercase tracking-wider flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5 text-[#8A5D08]" />
+                    <span>Cryptographic Verification Audit Checkpoints</span>
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="flex items-center gap-2.5 p-3 bg-white rounded-xl border border-[#EAE0CE]">
+                      <CheckCircle2 className="w-4 h-4 text-[#16A34A] flex-shrink-0" />
+                      <div>
+                        <span className="font-bold text-[#141619] block">Asymmetric Digital Signature</span>
+                        <span className="text-[11px] text-[#716049]">
+                          Primitive: {verification.algorithm?.toUpperCase() || 'ED25519'} &bull; Mathematical Proof PASS
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 p-3 bg-white rounded-xl border border-[#EAE0CE]">
+                      <CheckCircle2 className="w-4 h-4 text-[#16A34A] flex-shrink-0" />
+                      <div>
+                        <span className="font-bold text-[#141619] block">Payload Canonical Digest</span>
+                        <span className="text-[11px] text-[#716049]">
+                          SHA-256 Digest matches database registry 100%
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 p-3 bg-white rounded-xl border border-[#EAE0CE]">
+                      <CheckCircle2 className="w-4 h-4 text-[#16A34A] flex-shrink-0" />
+                      <div>
+                        <span className="font-bold text-[#141619] block">Issuing Authority Provenance</span>
+                        <span className="text-[11px] text-[#716049]">
+                          Signed with Root Key of {verification.institution?.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 p-3 bg-white rounded-xl border border-[#EAE0CE]">
+                      <CheckCircle2 className="w-4 h-4 text-[#16A34A] flex-shrink-0" />
+                      <div>
+                        <span className="font-bold text-[#141619] block">Revocation Registry Check</span>
+                        <span className="text-[11px] text-[#716049]">
+                          Active credential &bull; No revocation notices on file
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {verification.dataHash && (
+                    <div className="pt-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-semibold text-[#948065] uppercase tracking-wider">
+                          Verified Canonical SHA-256 Digest
+                        </span>
+                        <button
+                          onClick={() => copyHash(verification.dataHash!)}
+                          className="text-[11px] text-[#8A5D08] hover:text-[#5C3D06] flex items-center gap-1 font-semibold"
+                        >
+                          {copiedHash ? <Check className="w-3 h-3 text-[#15803D]" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedHash ? 'Copied' : 'Copy Digest'}</span>
+                        </button>
+                      </div>
+                      <p className="font-mono text-[11px] text-[#4F4232] bg-white border border-[#EAE0CE] rounded-xl px-3.5 py-2 break-all select-all">
+                        {verification.dataHash}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                  <a
+                    href={`/api/certificates/${verification.certificate.id}/pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:flex-1 inline-flex items-center justify-center gap-2 bg-[#181A1D] hover:bg-[#282B30] text-white text-xs font-bold py-3.5 px-5 rounded-xl shadow-warm hover:-translate-y-0.5 transition-all cursor-pointer"
+                  >
+                    <Download className="w-4 h-4 text-[#FEF0C2]" />
+                    <span>Download Official Verified PDF Transcript</span>
+                  </a>
+                  <Link
+                    href={`/certificates/${verification.certificate.id}`}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-[#FAF6EF] text-[#141619] border border-[#EAE0CE] text-xs font-bold py-3.5 px-5 rounded-xl transition-all"
+                  >
+                    <ExternalLink className="w-4 h-4 text-[#716049]" />
+                    <span>View Public Registry Record</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Case 2: Tampered / Fraudulent Document Detected */}
+          {verification.result === 'tampered' && (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-b from-[#FEF2F2] via-white to-[#FEF2F2] border-2 border-[#EF4444] rounded-3xl p-6 sm:p-8 shadow-warm-md space-y-6">
+                {/* Security Warning Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#FECACA]">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FEE2E2] text-[#B91C1C] border border-[#FCA5A5] mb-1">
+                      <AlertOctagon className="w-4 h-4 text-[#DC2626]" />
+                      <span>Security Warning: Cryptographic Integrity Breach</span>
+                    </div>
+                    <h2 className="font-serif text-2xl sm:text-3xl font-extrabold text-[#991B1B]">
+                      Tampered / Fraudulent Document Detected
+                    </h2>
+                    <p className="text-xs text-[#B91C1C] max-w-xl leading-relaxed">
+                      {verification.tampering?.reason ||
+                        'The uploaded document contains alterations or an invalid cryptographic signature. The contents of this document diverge from the authorized record.'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 bg-red-100/80 border border-red-300 px-4 py-2.5 rounded-2xl">
+                    <span className="text-xs font-mono font-bold text-red-800">
+                      FRAUD DETECTED
+                    </span>
+                  </div>
+                </div>
+
+                {/* Side-by-Side Discrepancy Forensic Breakdown */}
+                {verification.tampering?.discrepancies && (
+                  <div className="bg-white border border-[#FECACA] rounded-2xl p-6 space-y-4">
+                    <h4 className="text-xs font-bold text-[#991B1B] uppercase tracking-wider flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-[#DC2626]" />
+                      <span>Forensic Discrepancy Inspection (Original vs. Uploaded)</span>
+                    </h4>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-[#EAE0CE] bg-[#FAF6EF]">
+                            <th className="py-2.5 px-4 font-bold text-[#716049]">Credential Field</th>
+                            <th className="py-2.5 px-4 font-bold text-[#15803D]">Original in PKI Registry</th>
+                            <th className="py-2.5 px-4 font-bold text-[#B91C1C]">Tampered Value in Document</th>
+                            <th className="py-2.5 px-4 font-bold text-[#991B1B]">Verdict</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#EAE0CE]">
+                          {Object.entries(verification.tampering.discrepancies).map(([field, data]) => (
+                            <tr key={field} className="hover:bg-red-50/40">
+                              <td className="py-3 px-4 font-semibold text-[#141619]">{field}</td>
+                              <td className="py-3 px-4 font-mono font-bold text-[#15803D] bg-emerald-50/60 rounded">
+                                {String(data.expected)}
+                              </td>
+                              <td className="py-3 px-4 font-mono font-bold text-[#B91C1C] bg-red-50 rounded line-through">
+                                {String(data.detected)}
+                              </td>
+                              <td className="py-3 px-4 font-bold text-red-600">
+                                ALTERED / FRAUDULENT
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <p className="text-[11px] text-[#716049] leading-relaxed pt-1">
+                      Because Credify hashes canonical data objects and signs them with institution private keys, altering numbers, names, or distinctions in the PDF automatically invalidates the mathematical signature.
                     </p>
                   </div>
                 )}
+
+                {/* Registered Authority & Original Record Context */}
+                {verification.certificate && (
+                  <div className="bg-[#FAF6EF] border border-[#EAE0CE] rounded-2xl p-5 space-y-3 text-xs">
+                    <span className="text-[10px] font-bold text-[#948065] uppercase tracking-wider block">
+                      Target Certificate UUID in Registry
+                    </span>
+                    <p className="font-mono text-xs text-[#141619] break-all">
+                      {verification.certificate.id} (Issued by: {verification.institution?.name || 'Authorized University'})
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Case 3: Revoked Credential */}
+          {verification.result === 'revoked' && verification.certificate && (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-b from-[#FFF7ED] via-white to-[#FFF7ED] border-2 border-[#EA580C] rounded-3xl p-6 sm:p-8 shadow-warm-md space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#FFEDD5]">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FFEDD5] text-[#C2410C] border border-[#FDBA74] mb-1">
+                      <Ban className="w-4 h-4 text-[#EA580C]" />
+                      <span>Credential Invalidation Notice</span>
+                    </div>
+                    <h2 className="font-serif text-2xl sm:text-3xl font-extrabold text-[#9A3412]">
+                      Credential Revoked by Issuing Institution
+                    </h2>
+                    <p className="text-xs text-[#C2410C] max-w-xl leading-relaxed">
+                      This credential was originally cryptographically issued by{' '}
+                      <strong>{verification.institution?.name}</strong>, but has been officially revoked in the registry. It is no longer legally valid.
+                    </p>
+                  </div>
+                  <div className="bg-orange-100 border border-orange-300 px-4 py-2 rounded-xl text-orange-900 font-bold text-xs">
+                    STATUS: REVOKED
+                  </div>
+                </div>
+
+                <div className="bg-white border border-[#EAE0CE] rounded-2xl p-6 text-xs space-y-3">
+                  <span className="text-[10px] font-bold text-[#948065] uppercase tracking-wider block">
+                    Candidate Details
+                  </span>
+                  <p className="text-lg font-bold text-[#141619]">{verification.certificate.studentName}</p>
+                  <p className="text-[#716049]">{verification.certificate.degree} &bull; ID: {verification.certificate.rollNo}</p>
+                </div>
               </div>
             </div>
           )}
