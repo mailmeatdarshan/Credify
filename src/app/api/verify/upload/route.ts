@@ -114,17 +114,19 @@ export const POST = apiHandler(async (request: NextRequest) => {
       }
     }
 
-    const certData: CertificateData = {
-      studentName: certificate.studentName,
-      rollNo: certificate.rollNo,
-      degree: certificate.degree,
-      cgpa: certificate.cgpa,
+    const candidateData: CertificateData = {
+      studentName: extractedFields?.studentName || certificate.studentName,
+      rollNo: extractedFields?.rollNo || certificate.rollNo,
+      degree: extractedFields?.degree || certificate.degree,
+      cgpa: extractedFields?.cgpa && !isNaN(parseFloat(extractedFields.cgpa))
+        ? parseFloat(extractedFields.cgpa)
+        : certificate.cgpa,
       issueDate: certificate.issueDate,
       institutionId: certificate.institutionId,
     };
 
     const verificationResult = verifyCertificate(
-      certData,
+      candidateData,
       certificate.signature,
       certificate.institution.publicKey,
       certificate.institution.algorithm as AlgorithmType

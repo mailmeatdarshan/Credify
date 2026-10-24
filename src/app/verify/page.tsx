@@ -702,7 +702,8 @@ export default function VerifyPage() {
                     </h2>
                     <p className="text-xs text-[#B91C1C] max-w-xl leading-relaxed">
                       {verification.tampering?.reason ||
-                        'The uploaded document contains alterations or an invalid cryptographic signature. The contents of this document diverge from the authorized record.'}
+                        verification.message ||
+                        'The uploaded document or scanned QR code contains alterations or an invalid cryptographic signature. The contents diverge from the authorized record.'}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 bg-red-100/80 border border-red-300 px-4 py-2.5 rounded-2xl">

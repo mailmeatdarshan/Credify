@@ -60,6 +60,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return NextResponse.json({
       result: 'tampered',
       message: 'QR code hash does not match the certificate record.',
+      tampering: {
+        detected: true,
+        reason: 'QR code cryptographic hash does not match the PKI registered record. Document payload has been altered.',
+      },
       certificate: {
         id: certificate.id,
         studentName: certificate.studentName,
@@ -93,6 +97,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return NextResponse.json({
       result: 'tampered',
       message: 'QR code signature does not match the certificate record.',
+      tampering: {
+        detected: true,
+        reason: 'QR code digital signature does not match the issuing authority record.',
+      },
       certificate: {
         id: certificate.id,
         studentName: certificate.studentName,
